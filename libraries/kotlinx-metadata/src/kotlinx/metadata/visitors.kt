@@ -5,9 +5,13 @@
 
 package kotlinx.metadata
 
+@RequiresOptIn("Visitor API is deprecated. Please do not use", RequiresOptIn.Level.ERROR)
+annotation class DeprecatedVisitor
+
 /**
  * A visitor containing the common code to visit Kotlin declaration containers, such as classes and package fragments.
  */
+@DeprecatedVisitor
 abstract class KmDeclarationContainerVisitor @JvmOverloads constructor(protected open val delegate: KmDeclarationContainerVisitor? = null) {
     /**
      * Visits a function in the container.
@@ -54,6 +58,7 @@ abstract class KmDeclarationContainerVisitor @JvmOverloads constructor(protected
  * When using this class, [visit] must be called first, followed by zero or more [visitTypeParameter] calls, followed by zero or more calls
  * to other visit* methods, followed by [visitEnd].
  */
+@DeprecatedVisitor
 abstract class KmClassVisitor @JvmOverloads constructor(delegate: KmClassVisitor? = null) : KmDeclarationContainerVisitor(delegate) {
     override val delegate: KmClassVisitor?
         get() = super.delegate as KmClassVisitor?
@@ -185,6 +190,7 @@ abstract class KmClassVisitor @JvmOverloads constructor(delegate: KmClassVisitor
  *
  * When using this class, [visitEnd] must be called exactly once and after calls to all other visit* methods.
  */
+@DeprecatedVisitor
 abstract class KmPackageVisitor @JvmOverloads constructor(delegate: KmPackageVisitor? = null) : KmDeclarationContainerVisitor(delegate) {
     override val delegate: KmPackageVisitor?
         get() = super.delegate as KmPackageVisitor?
@@ -211,6 +217,7 @@ abstract class KmPackageVisitor @JvmOverloads constructor(delegate: KmPackageVis
  *
  * When using this class, [visitEnd] must be called exactly once and after calls to all other visit* methods.
  */
+@DeprecatedVisitor
 abstract class KmModuleFragmentVisitor @JvmOverloads constructor(private val delegate: KmModuleFragmentVisitor? = null) {
 
     /**

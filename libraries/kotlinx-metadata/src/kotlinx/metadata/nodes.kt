@@ -32,6 +32,7 @@ interface KmDeclarationContainer {
 /**
  * Represents a Kotlin class.
  */
+@OptIn(DeprecatedVisitor::class)
 class KmClass : KmClassVisitor(), KmDeclarationContainer {
     /**
      * Class flags, consisting of [Flag.HAS_ANNOTATIONS], visibility flag, modality flag and [Flag.Class] flags.
@@ -117,59 +118,75 @@ class KmClass : KmClassVisitor(), KmDeclarationContainer {
     private val extensions: List<KmClassExtension> =
         MetadataExtensions.INSTANCES.map(MetadataExtensions::createClassExtension)
 
+    @DeprecatedVisitor
     override fun visit(flags: Flags, name: ClassName) {
         this.flags = flags
         this.name = name
     }
 
+    @DeprecatedVisitor
     override fun visitTypeParameter(flags: Flags, name: String, id: Int, variance: KmVariance): KmTypeParameterVisitor =
         KmTypeParameter(flags, name, id, variance).addTo(typeParameters)
 
+    @DeprecatedVisitor
     override fun visitSupertype(flags: Flags): KmTypeVisitor =
         KmType(flags).addTo(supertypes)
 
+    @DeprecatedVisitor
     override fun visitFunction(flags: Flags, name: String): KmFunctionVisitor =
         KmFunction(flags, name).addTo(functions)
 
+    @DeprecatedVisitor
     override fun visitProperty(flags: Flags, name: String, getterFlags: Flags, setterFlags: Flags): KmPropertyVisitor =
         KmProperty(flags, name, getterFlags, setterFlags).addTo(properties)
 
+    @DeprecatedVisitor
     override fun visitTypeAlias(flags: Flags, name: String): KmTypeAliasVisitor =
         KmTypeAlias(flags, name).addTo(typeAliases)
 
+    @DeprecatedVisitor
     override fun visitConstructor(flags: Flags): KmConstructorVisitor =
         KmConstructor(flags).addTo(constructors)
 
+    @DeprecatedVisitor
     override fun visitCompanionObject(name: String) {
         this.companionObject = name
     }
 
+    @DeprecatedVisitor
     override fun visitNestedClass(name: String) {
         nestedClasses.add(name)
     }
 
+    @DeprecatedVisitor
     override fun visitEnumEntry(name: String) {
         enumEntries.add(name)
     }
 
+    @DeprecatedVisitor
     override fun visitSealedSubclass(name: ClassName) {
         sealedSubclasses.add(name)
     }
 
+    @DeprecatedVisitor
     override fun visitInlineClassUnderlyingPropertyName(name: String) {
         inlineClassUnderlyingPropertyName = name
     }
 
+    @DeprecatedVisitor
     override fun visitInlineClassUnderlyingType(flags: Flags): KmTypeVisitor =
         KmType(flags).also { inlineClassUnderlyingType = it }
 
+    @DeprecatedVisitor
     @ExperimentalContextReceivers
     override fun visitContextReceiverType(flags: Flags): KmTypeVisitor =
         KmType(flags).addTo(contextReceiverTypes)
 
+    @DeprecatedVisitor
     override fun visitVersionRequirement(): KmVersionRequirementVisitor =
         KmVersionRequirement().addTo(versionRequirements)
 
+    @DeprecatedVisitor
     override fun visitExtensions(type: KmExtensionType): KmClassExtensionVisitor =
         extensions.singleOfType(type)
 
@@ -178,6 +195,7 @@ class KmClass : KmClassVisitor(), KmDeclarationContainer {
      *
      * @param visitor the visitor which will visit data in this class
      */
+    @DeprecatedVisitor
     @OptIn(ExperimentalContextReceivers::class)
     fun accept(visitor: KmClassVisitor) {
         visitor.visit(flags, name)
@@ -203,6 +221,7 @@ class KmClass : KmClassVisitor(), KmDeclarationContainer {
 /**
  * Represents a Kotlin package fragment, including single file facades and multi-file class parts.
  */
+@OptIn(DeprecatedVisitor::class) // TODO
 class KmPackage : KmPackageVisitor(), KmDeclarationContainer {
     /**
      * Functions in the package fragment.
@@ -251,6 +270,7 @@ class KmPackage : KmPackageVisitor(), KmDeclarationContainer {
 /**
  * Represents a Kotlin module fragment. This is used to represent metadata of a part of a module on platforms other than JVM.
  */
+@OptIn(DeprecatedVisitor::class) // TODO
 class KmModuleFragment : KmModuleFragmentVisitor() {
 
     /**
