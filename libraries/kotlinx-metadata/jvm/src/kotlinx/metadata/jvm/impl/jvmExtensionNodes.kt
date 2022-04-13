@@ -9,9 +9,11 @@ import kotlinx.metadata.*
 import kotlinx.metadata.impl.extensions.*
 import kotlinx.metadata.jvm.*
 
+@OptIn(DeprecatedVisitor::class) // internal so OK
 internal val KmClass.jvm: JvmClassExtension
     get() = visitExtensions(JvmClassExtensionVisitor.TYPE) as JvmClassExtension
 
+@OptIn(DeprecatedVisitor::class) // internal so OK
 internal val KmPackage.jvm: JvmPackageExtension
     get() = visitExtensions(JvmPackageExtensionVisitor.TYPE) as JvmPackageExtension
 

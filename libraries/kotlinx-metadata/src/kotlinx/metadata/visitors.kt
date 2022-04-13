@@ -253,6 +253,7 @@ abstract class KmModuleFragmentVisitor @JvmOverloads constructor(private val del
  *
  * When using this class, [visitFunction] must be called first, followed by [visitEnd].
  */
+@DeprecatedVisitor
 abstract class KmLambdaVisitor @JvmOverloads constructor(private val delegate: KmLambdaVisitor? = null) {
     /**
      * Visits the signature of a synthetic anonymous function, representing the lambda.

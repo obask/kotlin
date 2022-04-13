@@ -198,6 +198,7 @@ private fun KmDeclarationContainerVisitor.visitDeclarations(
     }
 }
 
+@OptIn(DeprecatedVisitor::class)
 fun ProtoBuf.Function.accept(v: KmLambdaVisitor, strings: NameResolver) {
     val c = ReadContext(strings, TypeTable(typeTable), VersionRequirementTable.EMPTY)
 

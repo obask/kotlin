@@ -241,15 +241,19 @@ class KmPackage : KmPackageVisitor(), KmDeclarationContainer {
     private val extensions: List<KmPackageExtension> =
         MetadataExtensions.INSTANCES.map(MetadataExtensions::createPackageExtension)
 
+    @DeprecatedVisitor
     override fun visitFunction(flags: Flags, name: String): KmFunctionVisitor =
         KmFunction(flags, name).addTo(functions)
 
+    @DeprecatedVisitor
     override fun visitProperty(flags: Flags, name: String, getterFlags: Flags, setterFlags: Flags): KmPropertyVisitor =
         KmProperty(flags, name, getterFlags, setterFlags).addTo(properties)
 
+    @DeprecatedVisitor
     override fun visitTypeAlias(flags: Flags, name: String): KmTypeAliasVisitor =
         KmTypeAlias(flags, name).addTo(typeAliases)
 
+    @DeprecatedVisitor
     override fun visitExtensions(type: KmExtensionType): KmPackageExtensionVisitor =
         extensions.singleOfType(type)
 
@@ -258,6 +262,7 @@ class KmPackage : KmPackageVisitor(), KmDeclarationContainer {
      *
      * @param visitor the visitor which will visit data in this package fragment
      */
+    @DeprecatedVisitor
     fun accept(visitor: KmPackageVisitor) {
         functions.forEach { visitor.visitFunction(it.flags, it.name)?.let(it::accept) }
         properties.forEach { visitor.visitProperty(it.flags, it.name, it.getterFlags, it.setterFlags)?.let(it::accept) }
@@ -286,12 +291,15 @@ class KmModuleFragment : KmModuleFragmentVisitor() {
     private val extensions: List<KmModuleFragmentExtension> =
         MetadataExtensions.INSTANCES.map(MetadataExtensions::createModuleFragmentExtensions)
 
+    @DeprecatedVisitor
     override fun visitPackage(): KmPackageVisitor? =
         KmPackage().also { pkg = it }
 
+    @DeprecatedVisitor
     override fun visitExtensions(type: KmExtensionType): KmModuleFragmentExtensionVisitor? =
         extensions.singleOfType(type)
 
+    @DeprecatedVisitor
     override fun visitClass(): KmClassVisitor? =
         KmClass().addTo(classes)
 
@@ -300,6 +308,7 @@ class KmModuleFragment : KmModuleFragmentVisitor() {
      *
      * @param visitor the visitor which will visit data in the module fragment.
      */
+    @DeprecatedVisitor
     fun accept(visitor: KmModuleFragmentVisitor) {
         pkg?.let { visitor.visitPackage()?.let(it::accept) }
         classes.forEach { visitor.visitClass()?.let(it::accept) }
@@ -311,12 +320,14 @@ class KmModuleFragment : KmModuleFragmentVisitor() {
 /**
  * Represents a synthetic class generated for a Kotlin lambda.
  */
+@OptIn(DeprecatedVisitor::class)
 class KmLambda : KmLambdaVisitor() {
     /**
      * Signature of the synthetic anonymous function, representing the lambda.
      */
     lateinit var function: KmFunction
 
+    @DeprecatedVisitor
     override fun visitFunction(flags: Flags, name: String): KmFunctionVisitor =
         KmFunction(flags, name).also { function = it }
 
@@ -325,6 +336,7 @@ class KmLambda : KmLambdaVisitor() {
      *
      * @param visitor the visitor which will visit data in this lambda
      */
+    @DeprecatedVisitor
     fun accept(visitor: KmLambdaVisitor) {
         visitor.visitFunction(function.flags, function.name)?.let(function::accept)
         visitor.visitEnd()
