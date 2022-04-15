@@ -17,18 +17,23 @@ internal val KmClass.jvm: JvmClassExtension
 internal val KmPackage.jvm: JvmPackageExtension
     get() = visitExtensions(JvmPackageExtensionVisitor.TYPE) as JvmPackageExtension
 
+@OptIn(DeprecatedVisitor::class)
 internal val KmFunction.jvm: JvmFunctionExtension
     get() = visitExtensions(JvmFunctionExtensionVisitor.TYPE) as JvmFunctionExtension
 
+@OptIn(DeprecatedVisitor::class)
 internal val KmProperty.jvm: JvmPropertyExtension
     get() = visitExtensions(JvmPropertyExtensionVisitor.TYPE) as JvmPropertyExtension
 
+@OptIn(DeprecatedVisitor::class)
 internal val KmConstructor.jvm: JvmConstructorExtension
     get() = visitExtensions(JvmConstructorExtensionVisitor.TYPE) as JvmConstructorExtension
 
+@OptIn(DeprecatedVisitor::class)
 internal val KmTypeParameter.jvm: JvmTypeParameterExtension
     get() = visitExtensions(JvmTypeParameterExtensionVisitor.TYPE) as JvmTypeParameterExtension
 
+@OptIn(DeprecatedVisitor::class)
 internal val KmType.jvm: JvmTypeExtension
     get() = visitExtensions(JvmTypeExtensionVisitor.TYPE) as JvmTypeExtension
 
@@ -39,6 +44,7 @@ internal class JvmClassExtension : JvmClassExtensionVisitor(), KmClassExtension 
     var anonymousObjectOriginName: String? = null
     var jvmFlags: Flags = 0
 
+    @OptIn(DeprecatedVisitor::class) // TODO
     override fun visitLocalDelegatedProperty(flags: Flags, name: String, getterFlags: Flags, setterFlags: Flags): KmPropertyVisitor =
         KmProperty(flags, name, getterFlags, setterFlags).also { localDelegatedProperties.add(it) }
 
@@ -57,6 +63,7 @@ internal class JvmClassExtension : JvmClassExtensionVisitor(), KmClassExtension 
     override fun accept(visitor: KmClassExtensionVisitor) {
         require(visitor is JvmClassExtensionVisitor)
         localDelegatedProperties.forEach {
+            @OptIn(DeprecatedVisitor::class) // TODO
             visitor.visitLocalDelegatedProperty(it.flags, it.name, it.getterFlags, it.setterFlags)?.let(it::accept)
         }
         moduleName?.let(visitor::visitModuleName)
@@ -66,6 +73,7 @@ internal class JvmClassExtension : JvmClassExtensionVisitor(), KmClassExtension 
     }
 }
 
+@OptIn(DeprecatedVisitor::class) // TODO
 internal class JvmPackageExtension : JvmPackageExtensionVisitor(), KmPackageExtension {
     val localDelegatedProperties: MutableList<KmProperty> = ArrayList(0)
     var moduleName: String? = null

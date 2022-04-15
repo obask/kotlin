@@ -5,6 +5,8 @@
 
 package kotlinx.metadata
 
+import kotlin.contracts.ExperimentalContracts
+
 @RequiresOptIn("Visitor API is deprecated. Please do not use", RequiresOptIn.Level.ERROR)
 annotation class DeprecatedVisitor
 
@@ -277,6 +279,7 @@ abstract class KmLambdaVisitor @JvmOverloads constructor(private val delegate: K
  *
  * When using this class, [visitEnd] must be called exactly once and after calls to all other visit* methods.
  */
+@DeprecatedVisitor
 abstract class KmConstructorVisitor @JvmOverloads constructor(private val delegate: KmConstructorVisitor? = null) {
     /**
      * Visits a value parameter of the constructor.
@@ -315,6 +318,7 @@ abstract class KmConstructorVisitor @JvmOverloads constructor(private val delega
  * When using this class, zero or more calls to [visitTypeParameter] must be done first, followed by zero or more calls
  * to other visit* methods, followed by [visitEnd].
  */
+@DeprecatedVisitor
 abstract class KmFunctionVisitor @JvmOverloads constructor(private val delegate: KmFunctionVisitor? = null) {
     /**
      * Visits a type parameter of the function.
@@ -371,6 +375,7 @@ abstract class KmFunctionVisitor @JvmOverloads constructor(private val delegate:
     /**
      * Visits the contract of the function.
      */
+    @ExperimentalContracts
     open fun visitContract(): KmContractVisitor? =
         delegate?.visitContract()
 
@@ -396,6 +401,7 @@ abstract class KmFunctionVisitor @JvmOverloads constructor(private val delegate:
  * When using this class, zero or more calls to [visitTypeParameter] must be done first, followed by zero or more calls
  * to other visit* methods, followed by [visitEnd].
  */
+@DeprecatedVisitor
 abstract class KmPropertyVisitor @JvmOverloads constructor(private val delegate: KmPropertyVisitor? = null) {
     /**
      * Visits a type parameter of the property.
@@ -471,6 +477,7 @@ abstract class KmPropertyVisitor @JvmOverloads constructor(private val delegate:
  * When using this class, zero or more calls to [visitTypeParameter] must be done first, followed by zero or more calls
  * to other visit* methods, followed by [visitEnd].
  */
+@DeprecatedVisitor
 abstract class KmTypeAliasVisitor @JvmOverloads constructor(private val delegate: KmTypeAliasVisitor? = null) {
     /**
      * Visits a type parameter of the type alias.
@@ -538,6 +545,7 @@ abstract class KmTypeAliasVisitor @JvmOverloads constructor(private val delegate
  * When using this class, either [visitType] or [visitVarargElementType] must be called first (depending on whether the value parameter
  * is `vararg` or not), followed by [visitEnd].
  */
+@DeprecatedVisitor
 abstract class KmValueParameterVisitor @JvmOverloads constructor(private val delegate: KmValueParameterVisitor? = null) {
     /**
      * Visits the type of the value parameter, if this is **not** a `vararg` parameter.
@@ -576,6 +584,7 @@ abstract class KmValueParameterVisitor @JvmOverloads constructor(private val del
  *
  * When using this class, zero or more [visitUpperBound] calls must be done first, followed by [visitEnd].
  */
+@DeprecatedVisitor
 abstract class KmTypeParameterVisitor @JvmOverloads constructor(private val delegate: KmTypeParameterVisitor? = null) {
     /**
      * Visits the upper bound of the type parameter.
@@ -612,6 +621,7 @@ abstract class KmTypeParameterVisitor @JvmOverloads constructor(private val dele
  *
  * When using this class, [visitEnd] must be called exactly once and after calls to all other visit* methods.
  */
+@DeprecatedVisitor
 abstract class KmTypeVisitor @JvmOverloads constructor(private val delegate: KmTypeVisitor? = null) {
     /**
      * Visits the name of the class, if this type's classifier is a class.
@@ -723,6 +733,7 @@ abstract class KmTypeVisitor @JvmOverloads constructor(private val delegate: KmT
  *
  * When using this class, [visit] must be called first, followed by [visitVersion], followed by [visitEnd].
  */
+@DeprecatedVisitor
 abstract class KmVersionRequirementVisitor @JvmOverloads constructor(private val delegate: KmVersionRequirementVisitor? = null) {
     /**
      * Visits the description of this version requirement.
@@ -764,6 +775,8 @@ abstract class KmVersionRequirementVisitor @JvmOverloads constructor(private val
  *
  * When using this class, zero or more calls to [visitEffect] must be done first, followed by [visitEnd].
  */
+@DeprecatedVisitor
+@ExperimentalContracts
 abstract class KmContractVisitor @JvmOverloads constructor(private val delegate: KmContractVisitor? = null) {
     /**
      * Visits an effect of this contract.
@@ -792,6 +805,8 @@ abstract class KmContractVisitor @JvmOverloads constructor(private val delegate:
  * When using this class, zero or more calls to [visitConstructorArgument] or [visitConclusionOfConditionalEffect] must be done first,
  * followed by [visitEnd].
  */
+@DeprecatedVisitor
+@ExperimentalContracts
 abstract class KmEffectVisitor @JvmOverloads constructor(private val delegate: KmEffectVisitor? = null) {
     /**
      * Visits the optional argument of the effect constructor, i.e. the constant value for the [KmEffectType.RETURNS_CONSTANT] effect,
@@ -823,6 +838,8 @@ abstract class KmEffectVisitor @JvmOverloads constructor(private val delegate: K
  *
  * When using this class, [visit] must be called first, followed by zero or more calls to other visit* methods, followed by [visitEnd].
  */
+@DeprecatedVisitor
+@ExperimentalContracts
 abstract class KmEffectExpressionVisitor @JvmOverloads constructor(private val delegate: KmEffectExpressionVisitor? = null) {
     /**
      * Visits the basic information of the effect expression.
@@ -901,6 +918,7 @@ enum class KmVariance {
  * Contracts are an internal feature of the standard Kotlin library, and their behavior and/or binary format
  * may change in a subsequent release.
  */
+@ExperimentalContracts
 enum class KmEffectType {
     RETURNS_CONSTANT,
     CALLS,
@@ -913,6 +931,7 @@ enum class KmEffectType {
  * Contracts are an internal feature of the standard Kotlin library, and their behavior and/or binary format
  * may change in a subsequent release.
  */
+@ExperimentalContracts
 enum class KmEffectInvocationKind {
     AT_MOST_ONCE,
     EXACTLY_ONCE,
