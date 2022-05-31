@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.backend.common.phaser.*
 import org.jetbrains.kotlin.ir.backend.js.codegen.JsGenerationGranularity
 import org.jetbrains.kotlin.ir.backend.js.lower.*
 import org.jetbrains.kotlin.ir.backend.js.lower.calls.CallsLowering
+import org.jetbrains.kotlin.ir.backend.js.lower.calls.ExternalEnumStaticMethodsTransformerLowering
 import org.jetbrains.kotlin.ir.backend.js.lower.cleanup.CleanupLowering
 import org.jetbrains.kotlin.ir.backend.js.lower.coroutines.*
 import org.jetbrains.kotlin.ir.backend.js.lower.inline.*
@@ -246,10 +247,17 @@ private val syntheticAccessorLoweringPhase = makeBodyLoweringPhase(
     description = "Wrap top level inline function to access through them from inline functions"
 )
 
+private val externalEnumSyntheticMethodsLowering = makeBodyLoweringPhase(
+    ::ExternalEnumStaticMethodsTransformerLowering,
+    name = "externalEnumSyntheticMethodsLowering",
+    description = "Replace external enum static synthetic methods with an internal implementation"
+)
+
 private val wrapInlineDeclarationsWithReifiedTypeParametersLowering = makeBodyLoweringPhase(
     ::WrapInlineDeclarationsWithReifiedTypeParametersLowering,
     name = "WrapInlineDeclarationsWithReifiedTypeParametersLowering",
-    description = "Wrap inline declarations with reified type parameters"
+    description = "Wrap inline declarations with reified type parameters",
+    prerequisite = setOf(externalEnumSyntheticMethodsLowering)
 )
 
 private val functionInliningPhase = makeBodyLoweringPhase(
@@ -257,7 +265,7 @@ private val functionInliningPhase = makeBodyLoweringPhase(
     name = "FunctionInliningPhase",
     description = "Perform function inlining",
     prerequisite = setOf(
-        expectDeclarationsRemovingPhase, sharedVariablesLoweringPhase,
+        expectDeclarationsRemovingPhase, sharedVariablesLoweringPhase, externalEnumSyntheticMethodsLowering,
         localClassesInInlineLambdasPhase, localClassesExtractionFromInlineFunctionsPhase,
         syntheticAccessorLoweringPhase, wrapInlineDeclarationsWithReifiedTypeParametersLowering
     )
@@ -840,6 +848,7 @@ val loweringList = listOf<Lowering>(
     localClassesInInlineFunctionsPhase,
     localClassesExtractionFromInlineFunctionsPhase,
     syntheticAccessorLoweringPhase,
+    externalEnumSyntheticMethodsLowering,
     wrapInlineDeclarationsWithReifiedTypeParametersLowering,
     functionInliningPhase,
     copyInlineFunctionBodyLoweringPhase,
