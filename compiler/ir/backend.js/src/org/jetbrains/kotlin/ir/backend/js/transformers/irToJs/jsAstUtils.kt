@@ -9,7 +9,6 @@ import org.jetbrains.kotlin.backend.common.compilationException
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrFileEntry
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
-import org.jetbrains.kotlin.ir.backend.js.JsIrBackendContext
 import org.jetbrains.kotlin.ir.backend.js.JsStatementOrigins
 import org.jetbrains.kotlin.ir.backend.js.utils.*
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -25,6 +24,10 @@ import org.jetbrains.kotlin.js.backend.ast.*
 import org.jetbrains.kotlin.js.common.isValidES5Identifier
 import org.jetbrains.kotlin.util.OperatorNameConventions
 import org.jetbrains.kotlin.utils.addIfNotNull
+import java.io.FileInputStream
+import java.io.IOException
+import java.io.InputStreamReader
+import java.nio.charset.StandardCharsets
 
 fun jsVar(name: JsName, initializer: IrExpression?, context: JsGenerationContext): JsVars {
     val jsInitializer = initializer?.accept(IrElementToJsExpressionTransformer(), context)
@@ -498,7 +501,16 @@ private inline fun <T : JsNode> T.addSourceInfoIfNeed(node: IrElement, context: 
 
     // TODO maybe it's better to fix in JsExpressionStatement
     val locationTarget = if (this is JsExpressionStatement) this.expression else this
-    locationTarget.source = sourceInfo
+
+    locationTarget.source = JsLocationWithEmbeddedSource(sourceInfo, context.currentFile.fileEntry) {
+        try {
+            InputStreamReader(FileInputStream(sourceInfo.file), StandardCharsets.UTF_8)
+        } catch (e: IOException) {
+            // TODO: If the source file is not available at path (e. g. it's an stdlib file), use heuristics to find it.
+            // If all heuristics fail, use dumpKotlinLike() on freshly deserialized IrFile.
+            null
+        }
+    }
 }
 
 fun IrElement.getSourceInfo(container: IrDeclaration): JsLocation? {

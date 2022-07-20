@@ -777,10 +777,6 @@ abstract class AbstractKotlin2JsGradlePluginIT(protected val irBackend: Boolean)
     }
 
     @DisplayName("sources can be embedded into source map")
-    @DisabledIf(
-        "org.jetbrains.kotlin.gradle.AbstractKotlin2JsGradlePluginIT#getIrBackend",
-        disabledReason = "Source maps are not supported in IR backend"
-    )
     @GradleTest
     fun testKotlinJsSourceMapEmbedSources(gradleVersion: GradleVersion) {
         project("kotlin2JsProjectWithSourceMap", gradleVersion) {
