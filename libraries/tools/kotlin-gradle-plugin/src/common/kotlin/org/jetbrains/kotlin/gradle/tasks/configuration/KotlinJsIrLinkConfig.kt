@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.gradle.tasks.configuration
 
 import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrCompilation
 import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrLink
+import java.io.File
 
 internal open class KotlinJsIrLinkConfig(
     compilation: KotlinJsIrCompilation
@@ -19,7 +20,6 @@ internal open class KotlinJsIrLinkConfig(
 
             task.entryModule.fileProvider(compilation.output.classesDirs.elements.map { it.single().asFile }).disallowChanges()
             task.compilation = compilation
-            task.destinationDirectory.fileProvider(task.outputFileProperty.map { it.parentFile })
         }
     }
 }

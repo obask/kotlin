@@ -100,21 +100,9 @@ open class KotlinJsIrTargetConfigurator() :
                 }
 
                 compilation.compileKotlinTaskProvider.configure { task ->
-                    val outputFilePath = outputFile ?: if (produceUnzippedKlib) {
-                        task.destinationDirectory.get().asFile.absoluteFile.normalize().absolutePath
-                    } else {
-                        File(task.destinationDirectory.get().asFile, "$baseName.$KLIB_TYPE").absoluteFile.normalize().absolutePath
-                    }
-                    outputFile = outputFilePath
+                    val outputFilePath = outputFile ?: return@configure
 
                     val taskOutputDir = if (produceUnzippedKlib) File(outputFilePath) else File(outputFilePath).parentFile
-                    if (taskOutputDir.isParentOf(task.project.rootDir))
-                        throw InvalidUserDataException(
-                            "The output directory '$taskOutputDir' (defined by outputFile of $task) contains or " +
-                                    "matches the project root directory '${task.project.rootDir}'.\n" +
-                                    "Gradle will not be able to build the project because of the root directory lock.\n" +
-                                    "To fix this, consider using the default outputFile location instead of providing it explicitly."
-                        )
 
                     task.destinationDirectory.set(taskOutputDir)
                 }

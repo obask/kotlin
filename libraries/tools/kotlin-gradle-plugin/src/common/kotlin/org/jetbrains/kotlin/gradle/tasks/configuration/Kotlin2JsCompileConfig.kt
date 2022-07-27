@@ -5,6 +5,7 @@
 
 package org.jetbrains.kotlin.gradle.tasks.configuration
 
+import org.jetbrains.kotlin.gradle.dsl.KotlinJsOptionsImpl
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.KotlinCompilationData
 import org.jetbrains.kotlin.gradle.targets.js.ir.isProduceUnzippedKlib
@@ -33,11 +34,10 @@ internal open class BaseKotlin2JsCompileConfig<TASK : Kotlin2JsCompile>(
                     ?: task.destinationDirectory.locationOnly.get().asFile.resolve("${compilation.ownModuleName}$extensionName")
             }).disallowChanges()
 
-            task.optionalOutputFile.fileProvider(task.outputFileProperty.flatMap { outputFile ->
-                task.project.provider {
-                    outputFile.takeUnless { task.kotlinOptions.isProduceUnzippedKlib() }
-                }
+            task.outputName.value(task.project.provider {
+                (task.kotlinOptions as KotlinJsOptionsImpl).outputName ?: compilation.ownModuleName
             }).disallowChanges()
+
             task.libraryCache.set(libraryCacheService).also { task.libraryCache.disallowChanges() }
         }
     }

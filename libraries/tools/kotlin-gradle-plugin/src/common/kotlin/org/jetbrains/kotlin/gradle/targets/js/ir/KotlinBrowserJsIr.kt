@@ -205,7 +205,7 @@ abstract class KotlinBrowserJsIr @Inject constructor(target: KotlinJsIrTarget) :
                 ) { task ->
                     val entryFileProvider = binary.linkSyncTask.map {
                         it.destinationDir
-                            .resolve(binary.linkTask.get().outputFileProperty.get().name)
+                            .resolve(binary.linkTask.get().outputName.get() + ".js")
                     }
 
                     task.description = "build webpack ${mode.name.toLowerCase()} bundle"

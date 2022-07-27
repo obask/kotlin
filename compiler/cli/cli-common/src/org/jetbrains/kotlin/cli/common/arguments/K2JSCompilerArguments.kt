@@ -20,6 +20,12 @@ class K2JSCompilerArguments : CommonCompilerArguments() {
     @Argument(value = "-output", valueDescription = "<filepath>", description = "Destination *.js file for the compilation result")
     var outputFile: String? by NullableStringFreezableVar(null)
 
+    @Argument(value = "-Xir-output-dir", valueDescription = "<directory>", description = "Destination for generated files")
+    var outputDir: String? by NullableStringFreezableVar(null)
+
+    @Argument(value = "-Xir-output-name", description = "Base name of generated files")
+    var outputName: String? by NullableStringFreezableVar(null)
+
     @GradleOption(DefaultValues.BooleanTrueDefault::class)
     @Argument(value = "-no-stdlib", description = "Don't automatically include the default Kotlin/JS stdlib into compilation dependencies")
     var noStdlib: Boolean by FreezableVar(false)

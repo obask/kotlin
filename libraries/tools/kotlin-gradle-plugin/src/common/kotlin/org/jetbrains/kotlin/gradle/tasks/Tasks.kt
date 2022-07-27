@@ -924,18 +924,12 @@ abstract class Kotlin2JsCompile @Inject constructor(
             else -> incremental
         }
 
-    // This can be file or directory
+    @Deprecated("Use destinationDirectory and moduleName instead")
     @get:Internal
     abstract val outputFileProperty: Property<File>
 
-    @Deprecated("Please use outputFileProperty, this is kept for backwards compatibility.", replaceWith = ReplaceWith("outputFileProperty"))
-    @get:Internal
-    val outputFile: File
-        get() = outputFileProperty.get()
-
-    @get:OutputFile
-    @get:Optional
-    abstract val optionalOutputFile: RegularFileProperty
+    @get:Input
+    abstract val outputName: Property<String>
 
     override fun createCompilerArgs(): K2JSCompilerArguments =
         K2JSCompilerArguments()
@@ -944,14 +938,17 @@ abstract class Kotlin2JsCompile @Inject constructor(
         args.apply { fillDefaultValues() }
         super.setupCompilerArgs(args, defaultsOnly = defaultsOnly, ignoreClasspathResolutionErrors = ignoreClasspathResolutionErrors)
 
-        try {
-            outputFileProperty.get().canonicalPath
-        } catch (ex: Throwable) {
-            logger.warn("IO EXCEPTION: outputFile: ${outputFileProperty.get().path}")
-            throw ex
+        if (kotlinOptions.isIrBackendEnabled()) {
+            if (kotlinOptions.outputFile != null) {
+                args.outputDir = (kotlinOptions as KotlinJsOptionsImpl).destDir
+                kotlinOptions.outputFile?.let { args.outputName = File(it).nameWithoutExtension }
+            } else {
+                args.outputDir = destinationDirectory.get().asFile.normalize().absolutePath
+                args.outputName = outputName.get()
+            }
+        } else {
+            args.outputFile = outputFileProperty.get().absoluteFile.normalize().absolutePath
         }
-
-        args.outputFile = outputFileProperty.get().absoluteFile.normalize().absolutePath
 
         if (defaultsOnly) return
 

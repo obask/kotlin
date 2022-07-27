@@ -125,7 +125,7 @@ abstract class KotlinJsIrSubTarget(
                 project.layout.file(
                     binary.linkSyncTask.map {
                         it.destinationDir
-                            .resolve(binary.linkTask.get().outputFileProperty.get().name)
+                            .resolve(binary.linkTask.get().outputName.get() + ".js")
                     }
                 )
             )

@@ -11,7 +11,6 @@ import org.gradle.api.file.ProjectLayout
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
-import org.gradle.work.NormalizeLineEndings
 import org.gradle.workers.WorkerExecutor
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.parseCommandLineArguments
@@ -95,24 +94,6 @@ abstract class KotlinJsIrLink @Inject constructor(
     @get:InputDirectory
     @get:PathSensitive(PathSensitivity.RELATIVE)
     internal abstract val entryModule: DirectoryProperty
-
-    @get:Internal
-    override val destinationDirectory: DirectoryProperty = objectFactory.directoryProperty()
-
-    @get:OutputDirectory
-    val normalizedDestinationDirectory: DirectoryProperty = objectFactory
-        .directoryProperty()
-        .apply {
-            set(
-                destinationDirectory.map { dir ->
-                    if (kotlinOptions.outputFile != null) {
-                        projectLayout.dir(outputFileProperty.map { it.parentFile }).get()
-                    } else {
-                        dir
-                    }
-                }
-            )
-        }
 
     @get:Internal
     val rootCacheDirectory by lazy {

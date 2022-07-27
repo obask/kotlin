@@ -18,11 +18,28 @@ package org.jetbrains.kotlin.gradle.dsl
 
 import org.gradle.api.file.FileCollection
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
+import java.io.File
 
 internal class KotlinJsOptionsImpl : KotlinJsOptionsBase() {
     override var freeCompilerArgs: List<String> = listOf()
 
     var sourceMapBaseDirs: FileCollection? = null
+
+    internal var outputName: String? = null
+
+    internal var destDir: String? = null
+
+    @Deprecated("")
+    override var outputFile: String? = null
+        get() = field
+        set(value) {
+            value?.let {
+                val file = File(it)
+                destDir = file.parentFile.normalize().absolutePath
+                outputName = file.nameWithoutExtension
+            }
+            field = value
+        }
 
     override fun updateArguments(args: K2JSCompilerArguments) {
         super.updateArguments(args)
