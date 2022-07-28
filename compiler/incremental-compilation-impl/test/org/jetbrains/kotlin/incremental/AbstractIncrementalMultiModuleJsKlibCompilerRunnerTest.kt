@@ -19,7 +19,8 @@ abstract class AbstractIncrementalMultiModuleJsKlibCompilerRunnerTest :
     override fun createCompilerArguments(destinationDir: File, testDir: File): K2JSCompilerArguments =
         K2JSCompilerArguments().apply {
             libraries = STDLIB_DEPENDENCY
-            outputFile = File(destinationDir, "${testDir.name}.$KLIB_FILE_EXTENSION").path
+            outputDir = destinationDir
+            outputName = testDir.name
             sourceMap = false
             irProduceKlibDir = false
             irProduceKlibFile = true
@@ -81,7 +82,8 @@ abstract class AbstractIncrementalMultiModuleJsKlibCompilerRunnerTest :
         }
 
         libraries = sb.toString()
-        outputFile = outFile.path
+        outputDir = outFile.parentFile
+        outputName = outFile.nameWithoutExtension
     }
 
     companion object {
