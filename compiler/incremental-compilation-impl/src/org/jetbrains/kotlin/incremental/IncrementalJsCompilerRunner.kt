@@ -108,11 +108,10 @@ class IncrementalJsCompilerRunner(
     }
 
     override fun destinationDir(args: K2JSCompilerArguments): File {
-        val outputFile = File(args.outputFile!!)
         return if (args.isIrBackendEnabled())
-            outputFile
+            File(args.outputDir!!)
         else
-            outputFile.parentFile
+            File(args.outputFile!!).parentFile
     }
 
     override fun calculateSourcesToCompileImpl(
