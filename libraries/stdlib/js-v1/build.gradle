@@ -186,7 +186,7 @@ task compileJs(type: NoDebugJavaExec) {
 
     def sourceMapFile = file(jsOutputMapFileName)
     def jsOutputMetaFile = file(jsOutputMetaFileName)
-    def compileMetaFile = file(compileKotlin2Js.outputFile.path.replaceAll('\\.js$', '.meta.js'))
+    def compileMetaFile = file(compileKotlin2Js.outputFileProperty.map { it.path.replaceAll('\\.js$', '.meta.js') })
     def mainJsOutputDir = compileKotlin2Js.destinationDirectory
     doLast {
         ant.replaceregexp(
