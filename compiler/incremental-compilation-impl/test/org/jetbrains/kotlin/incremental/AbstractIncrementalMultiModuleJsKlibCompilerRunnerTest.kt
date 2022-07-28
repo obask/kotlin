@@ -19,7 +19,7 @@ abstract class AbstractIncrementalMultiModuleJsKlibCompilerRunnerTest :
     override fun createCompilerArguments(destinationDir: File, testDir: File): K2JSCompilerArguments =
         K2JSCompilerArguments().apply {
             libraries = STDLIB_DEPENDENCY
-            outputDir = destinationDir
+            outputDir = destinationDir.path
             outputName = testDir.name
             sourceMap = false
             irProduceKlibDir = false
@@ -82,7 +82,7 @@ abstract class AbstractIncrementalMultiModuleJsKlibCompilerRunnerTest :
         }
 
         libraries = sb.toString()
-        outputDir = outFile.parentFile
+        outputDir = outFile.parentFile.path
         outputName = outFile.nameWithoutExtension
     }
 
