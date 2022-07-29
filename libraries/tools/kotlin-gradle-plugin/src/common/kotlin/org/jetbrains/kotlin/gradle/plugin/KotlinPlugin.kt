@@ -248,11 +248,7 @@ internal class Kotlin2JsSourceSetProcessor(
                 val kotlinOptions = kotlinTaskInstance.kotlinOptions
                 val outputFile = kotlinTaskInstance.outputFileProperty.get()
                 val outputDir: File = outputFile.parentFile
-                kotlinOptions.outputFile = if (!kotlinOptions.isProduceUnzippedKlib()) {
-                    outputFile.absolutePath
-                } else {
-                    outputFile.parentFile.absolutePath
-                }
+                kotlinOptions.outputFile = outputFile.absolutePath
                 if (outputDir.isParentOf(project.rootDir))
                     throw InvalidUserDataException(
                         "The output directory '$outputDir' (defined by outputFile of $kotlinTaskInstance) contains or " +
