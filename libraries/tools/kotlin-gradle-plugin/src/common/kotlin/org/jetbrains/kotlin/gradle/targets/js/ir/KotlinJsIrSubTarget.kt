@@ -127,7 +127,7 @@ abstract class KotlinJsIrSubTarget(
                         val linkTask = binary.linkTask.get()
                         val extension = when (linkTask.platformType) {
                             KotlinPlatformType.wasm -> {
-                                ".wasm"
+                                ".mjs"
                             }
 
                             KotlinPlatformType.js -> {
