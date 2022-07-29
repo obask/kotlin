@@ -16,6 +16,11 @@ class K2JSCompilerArguments : CommonCompilerArguments() {
         @JvmStatic private val serialVersionUID = 0L
     }
 
+    @GradleDeprecatedOption(
+        "Only for legacy backend. For IR backend please use task.destinationDirectory and moduleName",
+        "1.10",
+        DeprecationLevel.WARNING
+    )
     @GradleOption(DefaultValues.StringNullDefault::class)
     @Argument(value = "-output", valueDescription = "<filepath>", description = "Destination *.js file for the compilation result")
     var outputFile: String? by NullableStringFreezableVar(null)

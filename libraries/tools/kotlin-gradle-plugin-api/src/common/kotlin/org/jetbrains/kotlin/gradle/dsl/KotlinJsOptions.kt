@@ -41,6 +41,7 @@ interface KotlinJsOptions  : org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
      * Destination *.js file for the compilation result
      * Default value: null
      */
+    @Deprecated(message = "Only for legacy backend. For IR backend please use task.destinationDirectory and moduleName", level = DeprecationLevel.WARNING)
      var outputFile: kotlin.String?
 
     /**

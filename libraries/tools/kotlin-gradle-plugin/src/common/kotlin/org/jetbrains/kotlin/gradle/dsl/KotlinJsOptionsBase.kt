@@ -72,6 +72,7 @@ internal abstract class KotlinJsOptionsBase : org.jetbrains.kotlin.gradle.dsl.Ko
             noStdlibField = value
         }
 
+    @Deprecated(message = "Only for legacy backend. For IR backend please use task.destinationDirectory and moduleName", level = DeprecationLevel.WARNING)
     override var outputFile: kotlin.String? = null
 
     private var sourceMapField: kotlin.Boolean? = null
