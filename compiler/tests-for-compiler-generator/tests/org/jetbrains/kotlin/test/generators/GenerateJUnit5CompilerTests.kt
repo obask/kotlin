@@ -236,6 +236,10 @@ fun generateJUnit5CompilerTests(args: Array<String>) {
                 model("codegen/box")
             }
 
+            testClass<AbstractFirWithKLibGeneratorBlackBoxCodegen> {
+                model("codegen/box")
+            }
+
             testClass<AbstractFirBlackBoxCodegenTest>("FirBlackBoxModernJdkCodegenTestGenerated") {
                 model("codegen/boxModernJdk")
             }

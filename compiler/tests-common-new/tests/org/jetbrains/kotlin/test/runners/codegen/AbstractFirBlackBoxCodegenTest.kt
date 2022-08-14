@@ -7,10 +7,8 @@ package org.jetbrains.kotlin.test.runners.codegen
 
 import org.jetbrains.kotlin.test.Constructor
 import org.jetbrains.kotlin.test.TargetBackend
-import org.jetbrains.kotlin.test.backend.ir.IrBackendInput
-import org.jetbrains.kotlin.test.backend.ir.JvmIrBackendFacade
-import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
-import org.jetbrains.kotlin.test.builders.configureFirHandlersStep
+import org.jetbrains.kotlin.test.backend.ir.*
+import org.jetbrains.kotlin.test.builders.*
 import org.jetbrains.kotlin.test.directives.JvmEnvironmentConfigurationDirectives.USE_PSI_CLASS_FILES_READING
 import org.jetbrains.kotlin.test.directives.ConfigurationDirectives.WITH_STDLIB
 import org.jetbrains.kotlin.test.directives.LanguageSettingsDirectives
@@ -24,10 +22,10 @@ import org.jetbrains.kotlin.test.frontend.fir.handlers.FirNoImplicitTypesHandler
 import org.jetbrains.kotlin.test.frontend.fir.handlers.FirScopeDumpHandler
 import org.jetbrains.kotlin.test.model.*
 
-open class AbstractFirBlackBoxCodegenTest : AbstractJvmBlackBoxCodegenTestBase<FirOutputArtifact, IrBackendInput>(
-    FrontendKinds.FIR,
-    TargetBackend.JVM_IR
-) {
+open class AbstractFirBlackBoxCodegenTest(private val useKLibGenerator: Boolean = false) : AbstractJvmBlackBoxCodegenTestBase<FirOutputArtifact, IrBackendInput>(
+        FrontendKinds.FIR,
+        TargetBackend.JVM_IR,
+    ) {
     override val frontendFacade: Constructor<FrontendFacade<FirOutputArtifact>>
         get() = ::FirFrontendFacade
 
@@ -36,6 +34,31 @@ open class AbstractFirBlackBoxCodegenTest : AbstractJvmBlackBoxCodegenTestBase<F
 
     override val backendFacade: Constructor<BackendFacade<IrBackendInput, BinaryArtifacts.Jvm>>
         get() = ::JvmIrBackendFacade
+
+    private val klibGeneratorFacade: Constructor<AbstractTestFacade<IrBackendInput, KLibArtifact>>
+        get() = ::KLibGenerator
+
+    private val backendKLibFacade: Constructor<AbstractTestFacade<KLibArtifact, BinaryArtifacts.Jvm>>
+        get() = ::JvmIrKLibBackendFacade
+
+    override fun TestConfigurationBuilder.configuration() {
+        if (!useKLibGenerator) {
+            commonConfigurationForCodegenTest(targetFrontend, frontendFacade, frontendToBackendConverter, backendFacade)
+        } else {
+            commonServicesConfigurationForCodegenTest(targetFrontend)
+            facadeStep(frontendFacade)
+            classicFrontendHandlersStep()
+            firHandlersStep()
+            facadeStep(frontendToBackendConverter)
+            irHandlersStep {}
+
+            facadeStep(klibGeneratorFacade)
+            facadeStep(backendKLibFacade)
+
+            jvmArtifactsHandlersStep {}
+        }
+        setUp()
+    }
 
     override fun configure(builder: TestConfigurationBuilder) {
         super.configure(builder)
