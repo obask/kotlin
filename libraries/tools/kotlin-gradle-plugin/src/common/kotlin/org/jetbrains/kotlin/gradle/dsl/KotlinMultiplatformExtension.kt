@@ -164,35 +164,3 @@ internal abstract class TargetsFromPresetExtensionWithDeprecation @Inject constr
         )
     }
 }
-
-internal fun KotlinTarget.isProducedFromPreset(kotlinTargetPreset: KotlinTargetPreset<*>): Boolean =
-    preset == kotlinTargetPreset
-
-internal fun <T : KotlinTarget> KotlinTargetsContainerWithPresets.configureOrCreate(
-    targetName: String,
-    targetPreset: KotlinTargetPreset<T>,
-    configure: T.() -> Unit
-): T {
-    val existingTarget = targets.findByName(targetName)
-    when {
-        existingTarget?.isProducedFromPreset(targetPreset) ?: false -> {
-            @Suppress("UNCHECKED_CAST")
-            configure(existingTarget as T)
-            return existingTarget
-        }
-        existingTarget == null -> {
-            val newTarget = targetPreset.createTarget(targetName)
-            targets.add(newTarget)
-            configure(newTarget)
-            return newTarget
-        }
-        else -> {
-            throw InvalidUserCodeException(
-                "The target '$targetName' already exists, but it was not created with the '${targetPreset.name}' preset. " +
-                        "To configure it, access it by name in `kotlin.targets`" +
-                        (" or use the preset function '${existingTarget.preset?.name}'."
-                            .takeIf { existingTarget.preset != null } ?: ".")
-            )
-        }
-    }
-}
