@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy
 
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.utils.getOrCreate
@@ -18,9 +19,19 @@ fun KotlinMultiplatformExtension.createSharedSourceSets(
 ) {
     targets.forEach { target ->
         target.compilations.all { compilation ->
+
             val sharedSourceSet = sourceSets.getOrCreate(
                 lowerCamelCaseName(sourceSetPrefix, compilation.name), invokeWhenCreated = configure
             )
+
+            if (compilation.name == KotlinCompilation.MAIN_COMPILATION_NAME) {
+                sharedSourceSet.dependsOn(sourceSets.getByName(KotlinSourceSet.COMMON_MAIN_SOURCE_SET_NAME))
+            }
+
+            if (compilation.name == KotlinCompilation.TEST_COMPILATION_NAME) {
+                sharedSourceSet.dependsOn(sourceSets.getByName(KotlinSourceSet.COMMON_TEST_SOURCE_SET_NAME))
+            }
+
             compilation.defaultSourceSet.dependsOn(sharedSourceSet)
         }
     }
