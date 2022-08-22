@@ -146,7 +146,7 @@ class JsNameLinkingNamer(private val context: JsIrBackendContext, private val mi
                                     correspondingProperty.isSimpleProperty
                             val safeName = when {
                                hasStableName -> (correspondingProperty ?: it).getJsNameOrKotlinName().identifier
-                               minimizedMemberNames -> context.minimizedNameGenerator.generateNextName()
+                               minimizedMemberNames && !context.fqNameExtractor.shouldKeep(it) -> context.minimizedNameGenerator.generateNextName()
                                else -> it.safeName()
                             }
                             val resultName = if (!hasStableName) {
