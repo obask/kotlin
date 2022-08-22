@@ -10,13 +10,16 @@ package org.jetbrains.kotlin.gradle
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.multiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
+import org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy.KotlinTargetHierarchy
+import org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy.KotlinTargetHierarchyDescriptor
+import org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy.withHierarchy
 import org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy.withNaturalHierarchy
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class WithNaturalHierarchyTest {
+class KotlinTargetHierarchyTest {
     @Test
-    fun `test - targets from all families`() {
+    fun `test - withNaturalHierarchy - targets from all families`() {
         val project = buildProjectWithMPP {
             kotlin {
                 withNaturalHierarchy {
@@ -151,6 +154,91 @@ class WithNaturalHierarchyTest {
         assertEquals(
             stringSetOf("linuxArm32HfpTest", "linuxX64Test"),
             kotlin.dependingSourceSetNames("linuxTest")
+        )
+    }
+
+    @Test
+    fun `test - withNaturalHierarchy - only linuxX64`() {
+        val project = buildProjectWithMPP {
+            kotlin {
+                withNaturalHierarchy {
+                    linuxX64()
+                }
+            }
+        }
+
+        val kotlin = project.multiplatformExtension
+
+        val commonMain = kotlin.sourceSets.getByName("commonMain")
+        val commonTest = kotlin.sourceSets.getByName("commonTest")
+        val nativeMain = kotlin.sourceSets.getByName("nativeMain")
+        val nativeTest = kotlin.sourceSets.getByName("nativeTest")
+        val linuxMain = kotlin.sourceSets.getByName("linuxMain")
+        val linuxTest = kotlin.sourceSets.getByName("linuxTest")
+        val linuxX64Main = kotlin.sourceSets.getByName("linuxX64Main")
+        val linuxX64Test = kotlin.sourceSets.getByName("linuxX64Test")
+
+        assertEquals(
+            setOf(commonMain, commonTest, nativeMain, nativeTest, linuxMain, linuxTest, linuxX64Main, linuxX64Test),
+            kotlin.sourceSets.toSet()
+        )
+    }
+
+    @Test
+    fun `test - KotlinTargetHierarchyDescriptor - extend`() {
+        val descriptor = KotlinTargetHierarchyDescriptor { group("base") }
+            .extend {
+                group("base") {
+                    group("extension")
+                }
+            }
+
+        val project = buildProjectWithMPP()
+        val linuxX64 = project.multiplatformExtension.linuxX64()
+        val hierarchy = descriptor.hierarchy(linuxX64)
+
+        assertEquals(
+            KotlinTargetHierarchy(
+                "common", setOf(
+                    KotlinTargetHierarchy(
+                        "base", setOf(
+                            KotlinTargetHierarchy("extension", emptySet())
+                        )
+                    )
+                )
+            ),
+            hierarchy
+        )
+    }
+
+    @Test
+    fun `test - withHierarchy - extend`() {
+        val descriptor = KotlinTargetHierarchyDescriptor { group("base") }
+        val project = buildProjectWithMPP {
+            kotlin {
+                withHierarchy(descriptor) {
+                    extendHierarchy { group("base") { group("extension") } }
+                    linuxX64()
+                }
+            }
+        }
+
+        val kotlin = project.multiplatformExtension
+
+        assertEquals(
+            stringSetOf("baseMain", "linuxX64Main"), kotlin.dependingSourceSetNames("commonMain")
+        )
+
+        assertEquals(
+            stringSetOf("extensionMain"), kotlin.dependingSourceSetNames("baseMain")
+        )
+
+        assertEquals(
+            stringSetOf("linuxX64Main"), kotlin.dependingSourceSetNames("extensionMain")
+        )
+
+        assertEquals(
+            stringSetOf(), kotlin.dependingSourceSetNames("linuxX64Main")
         )
     }
 }

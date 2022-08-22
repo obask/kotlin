@@ -11,16 +11,50 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinTargetContainerWithPresetFunctions
 import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.utils.lowerCamelCaseName
 
-internal fun KotlinMultiplatformExtension.withHierarchy(
-    hierarchy: KotlinTargetHierarchy, configure: KotlinTargetContainerWithPresetFunctions.() -> Unit
+@ExperimentalKotlinGradlePluginApi
+fun KotlinMultiplatformExtension.withHierarchy(
+    hierarchy: KotlinTargetHierarchyDescriptor, configure: KotlinTargetContainerWithHierarchy.() -> Unit
 ) {
-    KotlinTargetContainerWithHierarchy(this, hierarchy).configure()
+    KotlinTargetContainerWithHierarchyImpl(this, hierarchy).apply(configure).setup()
 }
 
-private class KotlinTargetContainerWithHierarchy(
+@ExperimentalKotlinGradlePluginApi
+interface KotlinTargetContainerWithHierarchy : KotlinTargetContainerWithPresetFunctions {
+    /**
+     * Possibility to extend the current [KotlinTargetHierarchy] and add additional groups.
+     * It is possible to extend already defined 'groups' by re-declaring them.
+     *
+     * ## Examples:
+     *
+     * ### Sharing Code between linux and macos (posix)
+     * ```kotlin
+     * extendHierarchy { target ->
+     *       if (target is KotlinNativeTarget) {
+     *           group("native") {
+     *               if (target.konanTarget.family.isAppleFamily || target.konanTarget.family == LINUX) {
+     *                   group("posix")
+     *               }
+     *           }
+     *       }
+     *   }
+     * ```
+     *
+     * ### Sharing code between native and jvm targets
+     * ```kotlin
+     * extendHierarchy { target ->
+     *     if (target is KotlinJvmTarget || target is KotlinNativeTarget ) {
+     *         group("jvmAndNative")
+     *    }
+     * }
+     * ```
+     */
+    fun extendHierarchy(describe: KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit)
+}
+
+private class KotlinTargetContainerWithHierarchyImpl(
     private val extension: KotlinMultiplatformExtension,
-    private val hierarchy: KotlinTargetHierarchy
-) : KotlinTargetContainerWithPresetFunctions {
+    private var descriptor: KotlinTargetHierarchyDescriptor
+) : KotlinTargetContainerWithHierarchy {
 
     override val presets: NamedDomainObjectCollection<KotlinTargetPreset<*>>
         get() = extension.presets
@@ -28,38 +62,40 @@ private class KotlinTargetContainerWithHierarchy(
     override val targets: NamedDomainObjectCollection<KotlinTarget>
         get() = extension.targets
 
+    private val configuredTargets = mutableSetOf<KotlinTarget>()
+
+    override fun extendHierarchy(describe: KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit) {
+        descriptor = descriptor.extend(describe)
+    }
+
     override fun <T : KotlinTarget> configureOrCreate(
         targetName: String,
         targetPreset: KotlinTargetPreset<T>,
         configure: T.() -> Unit
     ): T {
-        /* Target already created. Let's just delegate the call to configure it and return */
-        if (targets.findByName(targetName) != null) {
-            return super.configureOrCreate(targetName, targetPreset, configure)
-        }
-
-        /* New target created */
         val target = super.configureOrCreate(targetName, targetPreset, configure)
-        applyHierarchy(target, hierarchy)
+        configuredTargets += target
         return target
     }
 
-    private fun applyHierarchy(target: KotlinTarget, node: KotlinTargetHierarchy) {
-        if (!node.predicate(target)) return
-        target.compilations.all { compilation -> applyHierarchy(compilation, node, null) }
+    fun setup() {
+        configuredTargets.forEach { target -> applyHierarchy(descriptor.hierarchy(target), target) }
     }
 
-    private fun applyHierarchy(compilation: KotlinCompilation<*>, node: KotlinTargetHierarchy, parentNode: KotlinTargetHierarchy?) {
-        /* Create source sets in the hierarchy and connect them */
-        val sharedSourceSet = maybeCreateSourceSet(node, compilation)
-        if (parentNode != null) sharedSourceSet.dependsOn(maybeCreateSourceSet(parentNode, compilation))
-
-        val applicableChildren = node.children.filter { child -> child.predicate(compilation.target) }
-        if (applicableChildren.isEmpty()) compilation.defaultSourceSet.dependsOn(sharedSourceSet)
-        else applicableChildren.forEach { child -> applyHierarchy(compilation, child, node) }
+    private fun applyHierarchy(hierarchy: KotlinTargetHierarchy, target: KotlinTarget) {
+        target.compilations.all { compilation ->
+            applyHierarchy(hierarchy, compilation)
+        }
     }
 
-    private fun maybeCreateSourceSet(node: KotlinTargetHierarchy, compilation: KotlinCompilation<*>): KotlinSourceSet {
-        return extension.sourceSets.maybeCreate(lowerCamelCaseName(node.name, compilation.name))
+    private fun applyHierarchy(hierarchy: KotlinTargetHierarchy, compilation: KotlinCompilation<*>): KotlinSourceSet? {
+        val childSourceSets = if (hierarchy.children.isNotEmpty())
+            hierarchy.children.mapNotNull { child -> applyHierarchy(child, compilation) }
+        else setOf(compilation.defaultSourceSet)
+
+        val sharedSourceSet = extension.sourceSets.maybeCreate(lowerCamelCaseName(hierarchy.name, compilation.name))
+        childSourceSets.forEach { childSourceSet -> childSourceSet.dependsOn(sharedSourceSet) }
+
+        return sharedSourceSet
     }
 }

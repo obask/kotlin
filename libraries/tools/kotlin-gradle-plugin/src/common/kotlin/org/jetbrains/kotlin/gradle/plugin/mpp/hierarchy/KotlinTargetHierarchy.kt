@@ -5,35 +5,19 @@
 
 package org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy
 
-import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
+import org.jetbrains.kotlin.gradle.plugin.ExperimentalKotlinGradlePluginApi
 
-internal interface KotlinTargetHierarchy {
-    val name: String
-    val predicate: (KotlinTarget) -> Boolean
-    val children: List<KotlinTargetHierarchy>
-}
-
-internal class KotlinTargetHierarchyBuilder(private val name: String, private val predicate: (KotlinTarget) -> Boolean) {
-    private val children = mutableListOf<KotlinTargetHierarchyBuilder>()
-
-    fun child(name: String, predicate: (KotlinTarget) -> Boolean, builder: KotlinTargetHierarchyBuilder.() -> Unit = {}) {
-        children += KotlinTargetHierarchyBuilder(name, predicate).also(builder)
+@ExperimentalKotlinGradlePluginApi
+data class KotlinTargetHierarchy(
+    val name: String,
+    val children: Set<KotlinTargetHierarchy>
+) {
+    companion object {
+        const val ROOT_NAME = "common"
     }
 
-    fun build(): KotlinTargetHierarchy = KotlinTargetHierarchyImpl(
-        name, predicate, children.map { it.build() }
-    )
+    override fun toString(): String {
+        if (children.isEmpty()) return name
+        return name + "\n" + children.joinToString("\n").prependIndent("----")
+    }
 }
-
-internal fun KotlinTargetHierarchy(
-    rootName: String, rootPredicate: (KotlinTarget) -> Boolean = { true }, builder: KotlinTargetHierarchyBuilder.() -> Unit
-): KotlinTargetHierarchy {
-    return KotlinTargetHierarchyBuilder(rootName, rootPredicate).apply(builder).build()
-}
-
-
-private class KotlinTargetHierarchyImpl(
-    override val name: String,
-    override val predicate: (KotlinTarget) -> Boolean,
-    override val children: List<KotlinTargetHierarchy> = emptyList()
-) : KotlinTargetHierarchy

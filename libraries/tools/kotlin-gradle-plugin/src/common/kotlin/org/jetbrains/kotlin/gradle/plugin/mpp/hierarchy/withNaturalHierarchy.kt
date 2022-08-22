@@ -11,5 +11,5 @@ import org.jetbrains.kotlin.gradle.plugin.ExperimentalKotlinGradlePluginApi
 
 @ExperimentalKotlinGradlePluginApi
 fun KotlinMultiplatformExtension.withNaturalHierarchy(
-    configure: KotlinTargetContainerWithPresetFunctions.() -> Unit
+    configure: KotlinTargetContainerWithHierarchy.() -> Unit
 ) = withHierarchy(naturalKotlinTargetHierarchy, configure)
