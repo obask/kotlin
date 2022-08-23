@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy
 
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 
 interface KotlinTargetHierarchyDsl {
@@ -37,6 +38,7 @@ private fun apply(kotlin: KotlinMultiplatformExtension, hierarchyDescriptor: Kot
     }
 
     kotlin.targets.all { target ->
+        if (target.platformType == KotlinPlatformType.common) return@all
         target.compilations.all { compilation -> hierarchyDescriptor.hierarchy(compilation).setup(virtualSourceSets, compilation) }
     }
 }
