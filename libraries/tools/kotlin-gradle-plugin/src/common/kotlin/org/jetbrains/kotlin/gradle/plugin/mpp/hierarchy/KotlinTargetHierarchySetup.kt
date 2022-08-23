@@ -107,7 +107,7 @@ internal class VirtualKotlinSourceSetImpl(
 
     private fun createIfNecessary() {
         /* Only create this source set, when there are at least two children */
-        if (children.size < 2) return
+        //if (children.size < 2) return //  TODO NOW: Enable this line  for 'sparse' mode
         forceCreation()
     }
 }
