@@ -6,18 +6,23 @@
 package org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy
 
 import org.jetbrains.kotlin.gradle.plugin.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 
 @ExperimentalKotlinGradlePluginApi
 interface KotlinTargetHierarchyBuilder {
+    val compilation: KotlinCompilation<*>
     fun group(name: String, build: KotlinTargetHierarchyBuilder.() -> Unit = {})
 }
 
-internal class KotlinTargetHierarchyBuilderImpl(private val name: String) : KotlinTargetHierarchyBuilder {
+internal class KotlinTargetHierarchyBuilderImpl(
+    private val name: String,
+    override val compilation: KotlinCompilation<*>,
+) : KotlinTargetHierarchyBuilder {
 
     private val children = mutableMapOf<String, KotlinTargetHierarchyBuilderImpl>()
 
     override fun group(name: String, build: KotlinTargetHierarchyBuilder.() -> Unit) {
-        children.getOrPut(name) { KotlinTargetHierarchyBuilderImpl(name) }.also(build)
+        children.getOrPut(name) { KotlinTargetHierarchyBuilderImpl(name, compilation) }.also(build)
     }
 
     fun build(): KotlinTargetHierarchy = KotlinTargetHierarchy(name, children.values.map { it.build() }.toSet())

@@ -5,11 +5,17 @@
 
 package org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy
 
-import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.isMain
+import org.jetbrains.kotlin.gradle.plugin.mpp.isTest
 import org.jetbrains.kotlin.konan.target.Family
 
-internal val naturalKotlinTargetHierarchy = KotlinTargetHierarchyDescriptor { target: KotlinTarget ->
+internal val naturalKotlinTargetHierarchy = KotlinTargetHierarchyDescriptor hierarchy@{ target ->
+    if (!compilation.isMain() && !compilation.isTest()) {
+        /* This hierarchy is only defined for default 'main' and 'test' compilations */
+        return@hierarchy
+    }
+
     if (target is KotlinNativeTarget) {
         group("native") {
             val family = target.konanTarget.family

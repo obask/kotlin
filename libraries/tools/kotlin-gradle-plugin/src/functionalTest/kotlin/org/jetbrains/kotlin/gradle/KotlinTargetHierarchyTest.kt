@@ -195,7 +195,7 @@ class KotlinTargetHierarchyTest {
 
         val project = buildProjectWithMPP()
         val linuxX64 = project.multiplatformExtension.linuxX64()
-        val hierarchy = descriptor.hierarchy(linuxX64)
+        val hierarchy = descriptor.hierarchy(linuxX64.compilations.getByName("main"))
 
         assertEquals(
             KotlinTargetHierarchy(

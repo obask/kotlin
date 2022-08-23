@@ -8,8 +8,9 @@ package org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy
 import org.gradle.api.NamedDomainObjectCollection
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinTargetContainerWithPresetFunctions
-import org.jetbrains.kotlin.gradle.plugin.*
-import org.jetbrains.kotlin.gradle.utils.lowerCamelCaseName
+import org.jetbrains.kotlin.gradle.plugin.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
+import org.jetbrains.kotlin.gradle.plugin.KotlinTargetPreset
 
 @ExperimentalKotlinGradlePluginApi
 fun KotlinMultiplatformExtension.withHierarchy(
@@ -53,7 +54,7 @@ interface KotlinTargetContainerWithHierarchy : KotlinTargetContainerWithPresetFu
 
 private class KotlinTargetContainerWithHierarchyImpl(
     private val extension: KotlinMultiplatformExtension,
-    private var descriptor: KotlinTargetHierarchyDescriptor
+    private var hierarchyDescriptor: KotlinTargetHierarchyDescriptor
 ) : KotlinTargetContainerWithHierarchy {
 
     override val presets: NamedDomainObjectCollection<KotlinTargetPreset<*>>
@@ -65,7 +66,7 @@ private class KotlinTargetContainerWithHierarchyImpl(
     private val configuredTargets = mutableSetOf<KotlinTarget>()
 
     override fun extendHierarchy(describe: KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit) {
-        descriptor = descriptor.extend(describe)
+        hierarchyDescriptor = hierarchyDescriptor.extend(describe)
     }
 
     override fun <T : KotlinTarget> configureOrCreate(
@@ -79,23 +80,6 @@ private class KotlinTargetContainerWithHierarchyImpl(
     }
 
     fun setup() {
-        configuredTargets.forEach { target -> applyHierarchy(descriptor.hierarchy(target), target) }
-    }
-
-    private fun applyHierarchy(hierarchy: KotlinTargetHierarchy, target: KotlinTarget) {
-        target.compilations.all { compilation ->
-            applyHierarchy(hierarchy, compilation)
-        }
-    }
-
-    private fun applyHierarchy(hierarchy: KotlinTargetHierarchy, compilation: KotlinCompilation<*>): KotlinSourceSet? {
-        val childSourceSets = if (hierarchy.children.isNotEmpty())
-            hierarchy.children.mapNotNull { child -> applyHierarchy(child, compilation) }
-        else setOf(compilation.defaultSourceSet)
-
-        val sharedSourceSet = extension.sourceSets.maybeCreate(lowerCamelCaseName(hierarchy.name, compilation.name))
-        childSourceSets.forEach { childSourceSet -> childSourceSet.dependsOn(sharedSourceSet) }
-
-        return sharedSourceSet
+        hierarchyDescriptor.setup(configuredTargets)
     }
 }

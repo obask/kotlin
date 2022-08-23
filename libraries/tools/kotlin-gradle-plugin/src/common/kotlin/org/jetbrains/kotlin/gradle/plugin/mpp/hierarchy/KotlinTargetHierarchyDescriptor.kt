@@ -6,11 +6,12 @@
 package org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy
 
 import org.jetbrains.kotlin.gradle.plugin.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 
 @ExperimentalKotlinGradlePluginApi
 interface KotlinTargetHierarchyDescriptor {
-    fun hierarchy(target: KotlinTarget): KotlinTargetHierarchy
+    fun hierarchy(compilation: KotlinCompilation<*>): KotlinTargetHierarchy
     fun extend(describe: KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit): KotlinTargetHierarchyDescriptor
 }
 
@@ -24,9 +25,9 @@ fun KotlinTargetHierarchyDescriptor(
 private class KotlinTargetHierarchyDescriptorImpl(
     private val describe: KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit
 ) : KotlinTargetHierarchyDescriptor {
-    override fun hierarchy(target: KotlinTarget): KotlinTargetHierarchy {
-        val builder = KotlinTargetHierarchyBuilderImpl(KotlinTargetHierarchy.ROOT_NAME)
-        builder.describe(target)
+    override fun hierarchy(compilation: KotlinCompilation<*>): KotlinTargetHierarchy {
+        val builder = KotlinTargetHierarchyBuilderImpl(KotlinTargetHierarchy.ROOT_NAME, compilation)
+        builder.describe(compilation.target)
         return builder.build()
     }
 
