@@ -115,6 +115,18 @@ class IrModuleToJsTransformerTmp(
 
     private fun doStaticMembersLowering(modules: Iterable<IrModuleFragment>) {
         modules.forEach { module ->
+            module.files.forEach {
+                it.accept(
+                    backendContext.fqNameExtractor,
+                    KeepVisitor.KeepData(
+                        classInKeep = false,
+                        classShouldBeKept = false
+                    )
+                )
+            }
+        }
+
+        modules.forEach { module ->
             module.files.forEach { StaticMembersLowering(backendContext).lower(it) }
         }
     }

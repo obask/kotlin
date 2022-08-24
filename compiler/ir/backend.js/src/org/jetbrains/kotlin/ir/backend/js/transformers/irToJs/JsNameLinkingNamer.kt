@@ -86,7 +86,7 @@ class JsNameLinkingNamer(private val context: JsIrBackendContext, private val mi
     override fun getNameForMemberFunction(function: IrSimpleFunction): JsName {
         require(function.dispatchReceiverParameter != null)
         val signature = jsFunctionSignature(function, context)
-        val result = if (minimizedMemberNames && !function.hasStableJsName(context) && !context.fqNameExtractor.shouldKeep(function, signature, FqNameExtractor.TraverseDirection.UP)) {
+        val result = if (minimizedMemberNames && !function.hasStableJsName(context) && !context.fqNameExtractor.shouldKeep(function, signature)) {
             function.parentAsClass.fieldData()
             context.minimizedNameGenerator.nameBySignature(signature)
         } else signature
@@ -146,7 +146,7 @@ class JsNameLinkingNamer(private val context: JsIrBackendContext, private val mi
                                     correspondingProperty.isSimpleProperty
                             val safeName = when {
                                hasStableName -> (correspondingProperty ?: it).getJsNameOrKotlinName().identifier
-                               minimizedMemberNames && !context.fqNameExtractor.shouldKeep(it, null, FqNameExtractor.TraverseDirection.UP) -> context.minimizedNameGenerator.generateNextName()
+                               minimizedMemberNames && !context.fqNameExtractor.shouldKeep(it, null) -> context.minimizedNameGenerator.generateNextName()
                                else -> it.safeName()
                             }
                             val resultName = if (!hasStableName) {
