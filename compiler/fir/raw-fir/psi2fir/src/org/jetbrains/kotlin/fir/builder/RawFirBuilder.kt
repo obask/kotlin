@@ -1168,7 +1168,7 @@ open class RawFirBuilder(
                                 classIsExpect
                             )
 
-                            if (!classOrObject.hasModifier(EXTERNAL_KEYWORD)) {
+                            if (superTypeRefs.any { it.isEnum }) {
                                 generateEntriesGetter(
                                     baseModuleData, context.packageFqName, context.className,
                                     classIsExpect
