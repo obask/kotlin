@@ -1187,9 +1187,21 @@ public class DiagnosticsTestWithJsStdLibGenerated extends AbstractDiagnosticsTes
             }
 
             @Test
+            @TestMetadata("castToNativeEnum.kt")
+            public void testCastToNativeEnum() throws Exception {
+                runTest("compiler/testData/diagnostics/testsWithJsStdLib/native/rtti/castToNativeEnum.kt");
+            }
+
+            @Test
             @TestMetadata("castToNativeInterface.kt")
             public void testCastToNativeInterface() throws Exception {
                 runTest("compiler/testData/diagnostics/testsWithJsStdLib/native/rtti/castToNativeInterface.kt");
+            }
+
+            @Test
+            @TestMetadata("checkForNativeEnum.kt")
+            public void testCheckForNativeEnum() throws Exception {
+                runTest("compiler/testData/diagnostics/testsWithJsStdLib/native/rtti/checkForNativeEnum.kt");
             }
 
             @Test
@@ -1208,6 +1220,12 @@ public class DiagnosticsTestWithJsStdLibGenerated extends AbstractDiagnosticsTes
             @TestMetadata("nativeInterfaceClassLiteral.kt")
             public void testNativeInterfaceClassLiteral() throws Exception {
                 runTest("compiler/testData/diagnostics/testsWithJsStdLib/native/rtti/nativeInterfaceClassLiteral.kt");
+            }
+
+            @Test
+            @TestMetadata("whenIsNativeEnum.kt")
+            public void testWhenIsNativeEnum() throws Exception {
+                runTest("compiler/testData/diagnostics/testsWithJsStdLib/native/rtti/whenIsNativeEnum.kt");
             }
 
             @Test
