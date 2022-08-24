@@ -13,10 +13,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jetbrains.kotlin.utils.addToStdlib.cast
-import java.util.logging.ConsoleHandler
-import java.util.logging.Level
-import java.util.logging.Logger
-import java.util.logging.MemoryHandler
+import java.util.logging.*
 import kotlin.coroutines.*
 
 /**
@@ -24,30 +21,34 @@ import kotlin.coroutines.*
  * allowing us to communicate with it using [Chrome DevTools protocol](https://chromedevtools.github.io/devtools-protocol/).
  *
  * @param scriptPath the script for Node to run.
- * @param args the command line arguments passed to the script.
  */
-class NodeJsInspectorClient(val scriptPath: String, val args: List<String>) {
+class NodeJsInspectorClient(private val scriptPath: String, private val shareNodeJsInstanceBetweenRuns: Boolean) {
 
-    private var onDebuggerEventCallback: ((CDPEvent) -> Unit)? = null
+    private var onDebuggerEventCallback: (NodeJsInspectorClientContext.(CDPEvent) -> Unit)? = null
 
-    /**
-     * Creates a Node process and provides a context for communicating with it.
-     * After [block] returns, the Node process is destroyed.
-     */
-    fun <T> run(block: suspend NodeJsInspectorClientContext.() -> T): T = runBlocking {
-        val context = NodeJsInspectorClientContextImpl(this@NodeJsInspectorClient)
-        try {
-            runWithContext(context, block)
-        } finally {
-            context.release()
+    fun <T> run(
+        prepareInspector: suspend NodeJsInspectorClientContext.() -> Unit,
+        body: suspend NodeJsInspectorClientContext.() -> T
+    ): T = runBlocking {
+        val context = if (shareNodeJsInstanceBetweenRuns) {
+            NodeJsInspectorClientContextImpl.createOrGetThreadLocal {
+                runWithContext(this, prepareInspector)
+            }
+        } else {
+            NodeJsInspectorClientContextImpl().apply {
+                initializeIfNeeded {
+                    runWithContext(this, prepareInspector)
+                }
+            }
         }
+        context.writeln(scriptPath)
+        runWithContext(context, body)
     }
 
     private suspend fun <T> runWithContext(
         context: NodeJsInspectorClientContextImpl,
         block: suspend NodeJsInspectorClientContext.() -> T
     ): T {
-        context.startWebsocketSession()
 
         var blockResult: Result<T>? = null
         block.startCoroutine(context, object : Continuation<T> {
@@ -59,21 +60,32 @@ class NodeJsInspectorClient(val scriptPath: String, val args: List<String>) {
             }
         })
 
-        context.listenForMessages { message ->
-            when (val response = decodeCDPResponse(message) { context.messageContinuations[it]!!.first }) {
-                is CDPResponse.Event -> onDebuggerEventCallback?.invoke(response.event)
-                is CDPResponse.MethodInvocationResult -> context.messageContinuations.remove(response.id)!!.second.resume(response.result)
-                is CDPResponse.Error -> context.messageContinuations[response.id]!!.second.resumeWithException(
-                    IllegalStateException("error ${response.error.code}" + (response.error.message?.let { ": $it" } ?: ""))
-                )
-            }
-            context.waitingOnPredicate?.let { (predicate, continuation) ->
-                if (predicate()) {
-                    context.waitingOnPredicate = null
-                    continuation.resume(Unit)
+        try {
+            context.listenForMessages { message ->
+                when (val response = decodeCDPResponse(message) { context.messageContinuations[it]!!.encodingInfo }) {
+                    is CDPResponse.Event -> onDebuggerEventCallback?.invoke(context, response.event)
+                    is CDPResponse.MethodInvocationResult -> context.messageContinuations.remove(response.id)!!.continuation.resume(response.result)
+                    is CDPResponse.Error -> context.messageContinuations[response.id]!!.let { (_, continuation, stackTrace) ->
+                        continuation.resumeWithException(
+                            IllegalStateException("error ${response.error.code}" + (response.error.message?.let { ": $it" } ?: "")).apply {
+                                this.stackTrace = stackTrace
+                            }
+                        )
+                    }
                 }
+                context.waitingOnPredicate?.let { (predicate, continuation, _) ->
+                    if (predicate()) {
+                        context.waitingOnPredicate = null
+                        continuation.resume(Unit)
+                    }
+                }
+                blockResult != null
             }
-            blockResult != null
+        } catch (e: Exception) {
+            val callerStackTrace = context.messageContinuations.values.singleOrNull()?.stackTrace ?: context.waitingOnPredicate?.stackTrace
+            if (callerStackTrace != null)
+                e.stackTrace = callerStackTrace
+            throw e
         }
 
         return blockResult!!.getOrThrow()
@@ -82,7 +94,7 @@ class NodeJsInspectorClient(val scriptPath: String, val args: List<String>) {
     /**
      * Installs a listener for Chrome DevTools Protocol events.
      */
-    fun onEvent(receiveEvent: (CDPEvent) -> Unit) {
+    fun onEvent(receiveEvent: NodeJsInspectorClientContext.(CDPEvent) -> Unit) {
         onDebuggerEventCallback = receiveEvent
     }
 }
@@ -92,24 +104,36 @@ private const val NODE_WS_DEBUG_URL_PREFIX = "Debugger listening on ws://"
 /**
  * The actual implementation of the Node.js inspector client.
  */
-private class NodeJsInspectorClientContextImpl(engine: NodeJsInspectorClient) : NodeJsInspectorClientContext, CDPRequestEvaluator {
+private class NodeJsInspectorClientContextImpl : NodeJsInspectorClientContext, CDPRequestEvaluator {
 
-    private val consoleLoggingHandler = ConsoleHandler().apply {
-        level = Level.FINER
+    companion object {
+        private val instanceTL = object : ThreadLocal<NodeJsInspectorClientContextImpl>() {
+            override fun initialValue() = NodeJsInspectorClientContextImpl()
+            override fun remove() {
+                get().release()
+            }
+        }
+
+        suspend fun createOrGetThreadLocal(init: suspend NodeJsInspectorClientContextImpl.() -> Unit): NodeJsInspectorClientContextImpl =
+            instanceTL.get().apply { initializeIfNeeded(init) }
     }
 
-    private val memoryLoggingHandler = MemoryHandler(consoleLoggingHandler, 5000, Level.WARNING)
+    private var isInitialized = false
 
-    private val logger = Logger.getLogger(this::class.java.name).apply {
-        level = Level.FINER
-        addHandler(memoryLoggingHandler)
+    suspend fun initializeIfNeeded(init: suspend NodeJsInspectorClientContextImpl.() -> Unit) {
+        if (!isInitialized) {
+            logger.fine { "Preparing NodeJS inspector…" }
+            isInitialized = true
+            this.init()
+        }
     }
+
+    private val logger = Logger.getLogger(this::class.java.name)
 
     private val nodeProcess = ProcessBuilder(
         System.getProperty("javascript.engine.path.NodeJs"),
-        "--inspect-brk=0",
-        engine.scriptPath,
-        *engine.args.toTypedArray()
+        "--inspect=0",
+        "js/js.tests/test/org/jetbrains/kotlin/js/test/debugger/stepping_test_executor.js",
     ).also {
         logger.fine(it::joinedCommand)
     }.start()
@@ -130,22 +154,37 @@ private class NodeJsInspectorClientContextImpl(engine: NodeJsInspectorClient) : 
 
     private val webSocketClient = HttpClient(CIO) {
         install(WebSockets)
+        engine {
+            requestTimeout = 0
+        }
     }
 
-    private var webSocketSession: DefaultClientWebSocketSession? = null
+    private var webSocketSession = runBlocking { openWebSocketSession() }
 
-    val messageContinuations = mutableMapOf<Int, Pair<CDPMethodCallEncodingInfo, Continuation<CDPMethodInvocationResult>>>()
+    private suspend fun openWebSocketSession() = webSocketClient.webSocketSession(debugUrl).also {
+        logger.fine { "Opened a websocket session: $it" }
+    }
+
+    data class MessageContinuation(
+        val encodingInfo: CDPMethodCallEncodingInfo,
+        val continuation: Continuation<CDPMethodInvocationResult>,
+        val stackTrace: Array<StackTraceElement>
+    )
+
+    val messageContinuations = mutableMapOf<Int, MessageContinuation>()
+
+    data class WaitingOnPredicate(
+        val predicate: () -> Boolean,
+        val continuation: Continuation<Unit>,
+        val stackTrace: Array<StackTraceElement>,
+    )
 
     /**
      * See [waitForConditionToBecomeTrue].
      */
-    var waitingOnPredicate: Pair<(() -> Boolean), Continuation<Unit>>? = null
+    var waitingOnPredicate: WaitingOnPredicate? = null
 
     private var nextMessageId = 0
-
-    suspend fun startWebsocketSession() {
-        webSocketSession = webSocketClient.webSocketSession(debugUrl)
-    }
 
     private val loggingJsonPrettyPrinter by lazy { Json { prettyPrint = true } }
 
@@ -163,22 +202,19 @@ private class NodeJsInspectorClientContextImpl(engine: NodeJsInspectorClient) : 
      * The loop stops as soon as at least one message is received *and* [receiveMessage] returns `true`.
      */
     suspend fun listenForMessages(receiveMessage: (String) -> Boolean) {
-        val session = webSocketSession ?: error("Session closed")
-        do {
-            val message = try {
-                when (val frame = session.incoming.receive()) {
-                    is Frame.Text -> frame.readText()
-                    else -> error("Unexpected frame kind: $frame")
-                }
-            } catch (e: Exception) {
-                logger.log(Level.SEVERE, "Could not receive message", e)
-                throw e
+        while (true) {
+            val message = when (val frame = webSocketSession.incoming.receive()) {
+                is Frame.Text -> frame.readText()
+                else -> error("Unexpected frame kind: $frame")
             }
             logger.finer {
                 "Received message:\n${prettyPrintJson(message)}"
             }
-        } while (!receiveMessage(message))
+            if (receiveMessage(message)) break
+        }
     }
+
+    override var associatedState: Any? = null
 
     override val debugger = Debugger(this)
 
@@ -186,26 +222,27 @@ private class NodeJsInspectorClientContextImpl(engine: NodeJsInspectorClient) : 
 
     override suspend fun waitForConditionToBecomeTrue(predicate: () -> Boolean) {
         if (predicate()) return
+        val stacktrace = Thread.currentThread().stackTrace
         suspendCoroutine { continuation ->
             require(waitingOnPredicate == null) { "already waiting!" }
-            waitingOnPredicate = predicate to continuation
+            waitingOnPredicate = WaitingOnPredicate(predicate, continuation, stacktrace)
         }
     }
 
     private suspend fun sendPlainTextMessage(message: String) {
-        val session = webSocketSession ?: error("Session closed")
         logger.finer {
             "Sent message:\n${prettyPrintJson(message)}"
         }
-        session.send(message)
+        webSocketSession.send(message)
     }
 
     @Deprecated("Only for debugging purposes", level = DeprecationLevel.WARNING)
     override suspend fun sendPlainTextMessage(methodName: String, paramsJson: String): String {
         val messageId = nextMessageId++
+        val stacktrace = Thread.currentThread().stackTrace
         sendPlainTextMessage("""{"id":$messageId,"method":$methodName,"params":$paramsJson}""")
         return suspendCoroutine { continuation ->
-            messageContinuations[messageId] = CDPMethodCallEncodingInfoPlainText to continuation
+            messageContinuations[messageId] = MessageContinuation(CDPMethodCallEncodingInfoPlainText, continuation, stacktrace)
         }.cast<CDPMethodInvocationResultPlainText>().string
     }
 
@@ -213,20 +250,27 @@ private class NodeJsInspectorClientContextImpl(engine: NodeJsInspectorClient) : 
         encodeMethodCallWithMessageId: (Int) -> Pair<String, CDPMethodCallEncodingInfo>
     ): CDPMethodInvocationResult {
         val messageId = nextMessageId++
+        val stacktrace = Thread.currentThread().stackTrace
         val (encodedMessage, encodingInfo) = encodeMethodCallWithMessageId(messageId)
         sendPlainTextMessage(encodedMessage)
         return suspendCoroutine { continuation ->
-            messageContinuations[messageId] = encodingInfo to continuation
+            messageContinuations[messageId] = MessageContinuation(encodingInfo, continuation, stacktrace)
         }
+    }
+
+    fun writeln(content: String) {
+        logger.fine { "Writeln to node's stdin:\n$content" }
+        val writer = nodeProcess.outputStream.writer()
+        writer.write(content + "\n")
+        writer.flush()
     }
 
     /**
      * Releases all the resources and destroys the Node.js process.
      */
-    suspend fun release() {
+    fun release() = runBlocking {
         logger.fine { "Releasing $this" }
-        webSocketSession?.close()
-        webSocketSession = null
+        webSocketSession.close()
         webSocketClient.close()
         nodeProcess.destroy()
     }

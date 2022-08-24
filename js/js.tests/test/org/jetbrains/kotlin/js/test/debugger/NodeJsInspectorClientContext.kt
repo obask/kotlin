@@ -13,6 +13,11 @@ package org.jetbrains.kotlin.js.test.debugger
 interface NodeJsInspectorClientContext {
 
     /**
+     * A storage for any additional state associated with this context.
+     */
+    var associatedState: Any?
+
+    /**
      * The [`Debugger` domain](https://chromedevtools.github.io/devtools-protocol/tot/Debugger/) of Chrome DevTools protocol.
      */
     val debugger: Debugger

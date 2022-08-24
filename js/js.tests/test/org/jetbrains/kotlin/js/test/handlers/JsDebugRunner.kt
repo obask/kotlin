@@ -4,6 +4,7 @@
  */
 package org.jetbrains.kotlin.js.test.handlers
 
+import kotlinx.coroutines.withTimeout
 import org.jetbrains.kotlin.KtPsiSourceFileLinesMapping
 import org.jetbrains.kotlin.ir.backend.js.transformers.irToJs.TranslationMode
 import org.jetbrains.kotlin.js.parser.sourcemaps.*
@@ -87,6 +88,8 @@ class JsDebugRunner(testServices: TestServices) : AbstractJsArtifactsCollector(t
         val loggedItems = mutableListOf<SteppingTestLoggedData>()
         debuggerFacade.run {
             with(debuggerFacade) {
+                waitForPauseEvent { it.reason == Debugger.PauseReason.OTHER && it.hitBreakpoints.isEmpty() }
+                // Paused on the `debugger;` statement
                 val boxFunctionBreakpoint = debugger.setBreakpointByUrl(boxFunctionLineInGeneratedFile, jsFileURI.toString())
                 debugger.resume()
                 waitForResumeEvent()
@@ -104,6 +107,8 @@ class JsDebugRunner(testServices: TestServices) : AbstractJsArtifactsCollector(t
                     debugger.stepInto()
                     waitForResumeEvent()
                 }
+                debugger.resume()
+                waitForResumeEvent()
             }
         }
         checkSteppingTestResult(
@@ -216,49 +221,67 @@ class JsDebugRunner(testServices: TestServices) : AbstractJsArtifactsCollector(t
  */
 private class NodeJsDebuggerFacade(jsFilePath: String) {
 
-    private val inspector = NodeJsInspectorClient("js/js.translator/testData/runIrTestInNode.js", listOf(jsFilePath))
+    private class State {
+        val scriptUrls = mutableMapOf<Runtime.ScriptId, String>()
 
-    private val scriptUrls = mutableMapOf<Runtime.ScriptId, String>()
+        var pausedEvent: Debugger.Event.Paused? = null
+    }
 
-    private var pausedEvent: Debugger.Event.Paused? = null
+    private val shareNodeJsInstanceBetweenRuns =
+        System.getProperty("org.jetbrains.kotlin.js.test.stepping.sharedNodeJsInstance").toBoolean()
+
+    private val inspector = NodeJsInspectorClient(jsFilePath, shareNodeJsInstanceBetweenRuns)
 
     init {
         inspector.onEvent { event ->
             when (event) {
                 is Debugger.Event.ScriptParsed -> {
-                    scriptUrls[event.scriptId] = event.url
+                    state.scriptUrls[event.scriptId] = event.url
                 }
+
                 is Debugger.Event.Paused -> {
-                    pausedEvent = event
+                    state.pausedEvent = event
                 }
+
                 is Debugger.Event.Resumed -> {
-                    pausedEvent = null
+                    state.pausedEvent = null
                 }
+
                 else -> {}
             }
         }
     }
 
-    /**
-     * By the time [body] is called, the execution is paused, no code is executed yet.
-     */
-    fun <T> run(body: suspend NodeJsInspectorClientContext.() -> T) = inspector.run {
-        debugger.enable()
-        debugger.setSkipAllPauses(false)
-        runtime.runIfWaitingForDebugger()
-        waitForPauseEvent { it.reason == Debugger.PauseReason.BREAK_ON_START }
+    fun <T> run(body: suspend NodeJsInspectorClientContext.() -> T) = inspector.run(
+        prepareInspector = {
+            state = State()
+            withTimeout(15000) {
+                debugger.enable()
+                runtime.runIfWaitingForDebugger()
+            }
+        },
+        body = {
+            withTimeout(15000) {
+                body()
+            }
+        }
+    )
 
-        body()
-    }
+    private var NodeJsInspectorClientContext.state: State
+        get() = associatedState as State
+        set(newValue) {
+            associatedState = newValue
+        }
 
-    fun scriptUrlByScriptId(scriptId: Runtime.ScriptId) = scriptUrls[scriptId] ?: error("unknown scriptId")
+    fun NodeJsInspectorClientContext.scriptUrlByScriptId(scriptId: Runtime.ScriptId) =
+        state.scriptUrls[scriptId] ?: error("unknown scriptId: ${scriptId.value}")
 
     suspend fun NodeJsInspectorClientContext.waitForPauseEvent(suchThat: (Debugger.Event.Paused) -> Boolean = { true }) =
         waitForValueToBecomeNonNull {
-            pausedEvent?.takeIf(suchThat)
+            state.pausedEvent?.takeIf(suchThat)
         }
 
-    suspend fun NodeJsInspectorClientContext.waitForResumeEvent() = waitForConditionToBecomeTrue { pausedEvent == null }
+    suspend fun NodeJsInspectorClientContext.waitForResumeEvent() = waitForConditionToBecomeTrue { state.pausedEvent == null }
 }
 
 private fun URI.withAuthority(newAuthority: String?) =

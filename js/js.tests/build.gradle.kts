@@ -241,6 +241,8 @@ fun Test.setUpJsBoxTests(jsEnabled: Boolean, jsIrEnabled: Boolean) {
         dependsOn(":kotlin-test:kotlin-test-js-ir:compileKotlinJs")
         systemProperty("kotlin.js.kotlin.test.path", "libraries/kotlin.test/js-ir/build/classes/kotlin/js/main")
         inputs.dir(rootDir.resolve("libraries/kotlin.test/js-ir/build/classes/kotlin/js/main"))
+
+        systemProperty("org.jetbrains.kotlin.js.test.stepping.sharedNodeJsInstance", true)
     }
 
     exclude("org/jetbrains/kotlin/js/testOld/wasm/semantics/*")
@@ -298,7 +300,7 @@ projectTest("jsTest", parallel = true, jUnitMode = JUnitMode.JUnit5, maxHeapSize
     useJUnitPlatform()
 }
 
-projectTest("jsIrTest", true, jUnitMode = JUnitMode.JUnit5, maxHeapSizeMb = 4096) {
+projectTest("jsIrTest", parallel = false, jUnitMode = JUnitMode.JUnit5, maxHeapSizeMb = 4096) {
     setUpJsBoxTests(jsEnabled = false, jsIrEnabled = true)
     useJUnitPlatform()
 }
