@@ -117,8 +117,8 @@ class IrModuleToJsTransformerTmp(
         modules.forEach { module ->
             module.files.forEach {
                 it.accept(
-                    backendContext.fqNameExtractor,
-                    KeepVisitor.KeepData(
+                    backendContext.keeper,
+                    Keeper.KeepData(
                         classInKeep = false,
                         classShouldBeKept = false
                     )
