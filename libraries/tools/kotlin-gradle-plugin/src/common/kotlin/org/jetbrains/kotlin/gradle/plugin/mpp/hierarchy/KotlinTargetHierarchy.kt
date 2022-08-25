@@ -12,10 +12,6 @@ data class KotlinTargetHierarchy(
     val name: String,
     val children: Set<KotlinTargetHierarchy>
 ) {
-    companion object {
-        const val ROOT_NAME = "common"
-    }
-
     override fun toString(): String {
         if (children.isEmpty()) return name
         return name + "\n" + children.joinToString("\n").prependIndent("----")

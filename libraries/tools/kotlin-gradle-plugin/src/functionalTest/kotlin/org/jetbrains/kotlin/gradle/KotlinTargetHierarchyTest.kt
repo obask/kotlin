@@ -14,8 +14,11 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy.KotlinTargetHierarchy
 import org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy.KotlinTargetHierarchyDescriptor
 import org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy.withHierarchy
 import org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy.withNaturalHierarchy
+import org.jetbrains.kotlin.tooling.core.withClosure
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertSame
+import kotlin.test.fail
 
 class KotlinTargetHierarchyTest {
     @Test
@@ -195,11 +198,40 @@ class KotlinTargetHierarchyTest {
 
         val project = buildProjectWithMPP()
         val linuxX64 = project.multiplatformExtension.linuxX64()
-        val hierarchy = descriptor.hierarchy(linuxX64.compilations.getByName("main"))
+        val hierarchies = descriptor.hierarchies(linuxX64.compilations.getByName("main"))
+
+        assertEquals(
+            setOf(
+                KotlinTargetHierarchy(
+                    "base", setOf(
+                        KotlinTargetHierarchy("extension", emptySet())
+                    )
+                )
+            ),
+            hierarchies
+        )
+    }
+
+    @Test
+    fun `test - KotlinTargetHierarchyDescriptor - extend - with new root`() {
+        val descriptor = KotlinTargetHierarchyDescriptor { group("base") }
+            .extend {
+                group("newRoot") {
+                    group("base") {
+                        group("extension")
+                    }
+                }
+            }
+
+        val project = buildProjectWithMPP()
+        val linuxX64 = project.multiplatformExtension.linuxX64()
+        val hierarchies = descriptor.hierarchies(linuxX64.compilations.getByName("main"))
+
+        val hierarchy = hierarchies.single()
 
         assertEquals(
             KotlinTargetHierarchy(
-                "common", setOf(
+                "newRoot", setOf(
                     KotlinTargetHierarchy(
                         "base", setOf(
                             KotlinTargetHierarchy("extension", emptySet())
@@ -212,8 +244,72 @@ class KotlinTargetHierarchyTest {
     }
 
     @Test
-    fun `test - withHierarchy - extend`() {
+    fun `test - KotlinTargetHierarchyDescriptor - extend - with new two root and two extensions`() {
         val descriptor = KotlinTargetHierarchyDescriptor { group("base") }
+            .extend {
+                group("newRoot1") {
+                    group("base") {
+                        group("extension1")
+                    }
+                }
+            }.extend {
+                group("newRoot2") {
+                    group("base") {
+                        group("extension2")
+                    }
+                }
+            }
+
+        val project = buildProjectWithMPP()
+        val linuxX64 = project.multiplatformExtension.linuxX64()
+        val hierarchies = descriptor.hierarchies(linuxX64.compilations.getByName("main"))
+
+        if (hierarchies.size != 2)
+            fail("Expected two hierarchies: Found $hierarchies")
+
+        assertEquals(
+            setOf(
+                KotlinTargetHierarchy(
+                    "newRoot1", setOf(
+                        KotlinTargetHierarchy(
+                            "base", setOf(
+                                KotlinTargetHierarchy("extension1", emptySet()),
+                                KotlinTargetHierarchy("extension2", emptySet())
+                            )
+                        )
+                    )
+                ),
+                KotlinTargetHierarchy(
+                    "newRoot2", setOf(
+                        KotlinTargetHierarchy(
+                            "base", setOf(
+                                KotlinTargetHierarchy("extension1", emptySet()),
+                                KotlinTargetHierarchy("extension2", emptySet())
+                            )
+                        )
+                    )
+                )
+            ),
+            hierarchies
+        )
+
+        fun KotlinTargetHierarchy.collectChildren(): List<KotlinTargetHierarchy> {
+            return children.toList() + children.flatMap { it.collectChildren() }
+        }
+
+        /* Check that all equal hierarchies are even the same instance */
+        val allNodes = hierarchies.flatMap { it.collectChildren() }
+        allNodes.forEach { node ->
+            val equalNodes = allNodes.filter { otherNode -> otherNode == node }
+            equalNodes.forEach { equalNode ->
+                assertSame(node, equalNode, "Expected equal nodes to be the same instance")
+            }
+        }
+    }
+
+    @Test
+    fun `test - withHierarchy - extend`() {
+        val descriptor = KotlinTargetHierarchyDescriptor { group("common") { group("base") } }
         val project = buildProjectWithMPP {
             kotlin {
                 withHierarchy(descriptor) {
@@ -241,6 +337,48 @@ class KotlinTargetHierarchyTest {
             stringSetOf(), kotlin.dependingSourceSetNames("linuxX64Main")
         )
     }
+
+
+    @Test
+    fun `test - withHierarchy - extend - with new root`() {
+        val descriptor = KotlinTargetHierarchyDescriptor {
+            group("common") {
+                group("base")
+            }
+        }
+
+        val project = buildProjectWithMPP {
+            kotlin {
+                withHierarchy(descriptor) {
+                    extendHierarchy { group("newRoot") { group("base") { group("extension") } } }
+                    linuxX64()
+                }
+            }
+        }
+
+        val kotlin = project.multiplatformExtension
+
+        assertEquals(
+            stringSetOf("baseMain"), kotlin.dependingSourceSetNames("newRootMain")
+        )
+
+        assertEquals(
+            stringSetOf("baseMain", "linuxX64Main"), kotlin.dependingSourceSetNames("commonMain")
+        )
+
+        assertEquals(
+            stringSetOf("extensionMain"), kotlin.dependingSourceSetNames("baseMain")
+        )
+
+        assertEquals(
+            stringSetOf("linuxX64Main"), kotlin.dependingSourceSetNames("extensionMain")
+        )
+
+        assertEquals(
+            stringSetOf(), kotlin.dependingSourceSetNames("linuxX64Main")
+        )
+    }
+
 }
 
 private fun KotlinMultiplatformExtension.dependingSourceSetNames(sourceSetName: String) =

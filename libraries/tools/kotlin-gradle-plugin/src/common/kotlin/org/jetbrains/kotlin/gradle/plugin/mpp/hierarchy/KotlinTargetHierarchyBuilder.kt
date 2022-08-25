@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.gradle.targets.js.KotlinJsTarget
 import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrTarget
 import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 import org.jetbrains.kotlin.konan.target.Family
+import org.jetbrains.kotlin.tooling.core.closure
 
 @ExperimentalKotlinGradlePluginApi
 interface KotlinTargetHierarchyBuilder {
@@ -38,15 +39,31 @@ interface KotlinTargetHierarchyBuilder {
 }
 
 internal class KotlinTargetHierarchyBuilderImpl(
-    private val name: String,
     override val compilation: KotlinCompilation<*>,
+    private val allGroups: MutableMap<String, KotlinTargetHierarchyBuilderImpl> = mutableMapOf()
 ) : KotlinTargetHierarchyBuilder {
 
-    private val children = mutableMapOf<String, KotlinTargetHierarchyBuilderImpl>()
+    private val groups = mutableMapOf<String, KotlinTargetHierarchyBuilderImpl>()
 
     override fun group(name: String, build: KotlinTargetHierarchyBuilder.() -> Unit) {
-        children.getOrPut(name) { KotlinTargetHierarchyBuilderImpl(name, compilation) }.also(build)
+        groups.getOrPut(name) {
+            allGroups.getOrPut(name) { KotlinTargetHierarchyBuilderImpl(compilation, allGroups) }
+        }.also(build)
     }
 
-    fun build(): KotlinTargetHierarchy = KotlinTargetHierarchy(name, children.values.map { it.build() }.toSet())
+    fun build(): Set<KotlinTargetHierarchy> {
+        return build(mutableMapOf())
+    }
+
+
+    private fun build(interner: MutableMap<KotlinTargetHierarchy, KotlinTargetHierarchy>): Set<KotlinTargetHierarchy> {
+        /* Build roots */
+        val roots = groups.map { (name, builder) -> KotlinTargetHierarchy(name, builder.build(interner)) }
+            .map { interner.getOrPut(it) { it } }
+            .toSet()
+
+        /* Filter unnecessary roots that are already present in some other root */
+        val childrenClosure = roots.flatMap { root -> root.closure { it.children } }.toSet()
+        return roots - childrenClosure
+    }
 }

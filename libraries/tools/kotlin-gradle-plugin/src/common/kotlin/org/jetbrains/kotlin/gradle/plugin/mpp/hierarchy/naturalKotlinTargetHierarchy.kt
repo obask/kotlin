@@ -14,20 +14,22 @@ internal val naturalKotlinTargetHierarchy = KotlinTargetHierarchyDescriptor hier
         return@hierarchy
     }
 
-    if (target.isNative) {
-        group("native") {
-            if (target.isApple) {
-                group("apple") {
-                    if (target.isIos) group("ios")
-                    if (target.isTvos) group("tvos")
-                    if (target.isWatchos) group("watchos")
-                    if (target.isMacos) group("macos")
+    group("common") {
+        if (target.isNative) {
+            group("native") {
+                if (target.isApple) {
+                    group("apple") {
+                        if (target.isIos) group("ios")
+                        if (target.isTvos) group("tvos")
+                        if (target.isWatchos) group("watchos")
+                        if (target.isMacos) group("macos")
+                    }
                 }
-            }
 
-            if (target.isLinux) group("linux")
-            if (target.isWindows) group("windows")
-            if (target.isAndroidNative) group("androidNative")
+                if (target.isLinux) group("linux")
+                if (target.isWindows) group("windows")
+                if (target.isAndroidNative) group("androidNative")
+            }
         }
     }
 }

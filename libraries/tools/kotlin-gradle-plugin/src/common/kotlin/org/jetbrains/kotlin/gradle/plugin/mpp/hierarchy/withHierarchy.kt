@@ -80,6 +80,6 @@ private class KotlinTargetContainerWithHierarchyImpl(
     }
 
     fun setup() {
-        hierarchyDescriptor.setup(configuredTargets)
+        extension.applyKotlinTargetHierarchy(hierarchyDescriptor, extension.targets.matching { it in configuredTargets })
     }
 }
