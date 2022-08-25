@@ -349,9 +349,7 @@ abstract class FirJavaFacade(
                 )
                 generateValueOfFunction(moduleData, classId.packageFqName, classId.relativeClassName)
 
-                if (superTypeRefs.any { it.isEnum }) {
-                    generateEntriesGetter(moduleData, classId.packageFqName, classId.relativeClassName)
-                }
+                generateEntriesGetter(moduleData, classId.packageFqName, classId.relativeClassName)
             }
             if (classIsAnnotation) {
                 declarations +=
