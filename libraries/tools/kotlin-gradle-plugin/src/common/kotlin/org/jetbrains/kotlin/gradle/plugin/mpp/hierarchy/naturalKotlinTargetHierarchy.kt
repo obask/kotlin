@@ -5,10 +5,8 @@
 
 package org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy
 
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.isMain
 import org.jetbrains.kotlin.gradle.plugin.mpp.isTest
-import org.jetbrains.kotlin.konan.target.Family
 
 internal val naturalKotlinTargetHierarchy = KotlinTargetHierarchyDescriptor hierarchy@{ target ->
     if (!compilation.isMain() && !compilation.isTest()) {
@@ -16,21 +14,20 @@ internal val naturalKotlinTargetHierarchy = KotlinTargetHierarchyDescriptor hier
         return@hierarchy
     }
 
-    if (target is KotlinNativeTarget) {
+    if (target.isNative) {
         group("native") {
-            val family = target.konanTarget.family
-            if (family.isAppleFamily) {
+            if (target.isApple) {
                 group("apple") {
-                    if (family == Family.IOS) group("ios")
-                    if (family == Family.TVOS) group("tvos")
-                    if (family == Family.WATCHOS) group("watchos")
-                    if (family == Family.OSX) group("macos")
+                    if (target.isIos) group("ios")
+                    if (target.isTvos) group("tvos")
+                    if (target.isWatchos) group("watchos")
+                    if (target.isMacos) group("macos")
                 }
             }
 
-            if (family == Family.LINUX) group("linux")
-            if (family == Family.MINGW) group("windows")
-            if (family == Family.ANDROID) group("androidNative")
+            if (target.isLinux) group("linux")
+            if (target.isWindows) group("windows")
+            if (target.isAndroidNative) group("androidNative")
         }
     }
 }
