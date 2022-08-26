@@ -69,3 +69,16 @@ internal class DefaultIdeaSyncDetector(
         override fun readSystemPropertyValue(key: String) = System.getProperty(key)
     }
 }
+
+internal class IdeaSyncDetectorG6(private val providerFactory: ProviderFactory) : IdeaSyncDetector {
+    override val isInIdeaSync = createIdeaPropertiesEvaluator().isInIdeaSync()
+
+    override fun createIdeaPropertiesEvaluator() = object : IdeaPropertiesEvaluator() {
+        // we should declare system property read for Gradle < 7.4
+        override fun readSystemPropertyValue(key: String) = providerFactory.systemProperty(key).forUseAtConfigurationTime().orNull
+    }
+
+    internal class IdeaSyncDetectorVariantFactoryG6 : IdeaSyncDetector.IdeaSyncDetectorVariantFactory {
+        override fun getInstance(project: Project): IdeaSyncDetector = IdeaSyncDetectorG6(project.providers)
+    }
+}

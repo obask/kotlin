@@ -10,6 +10,9 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.tasks.TaskProvider
 import org.jetbrains.kotlin.gradle.plugin.BuildEventsListenerRegistryHolder
+import org.jetbrains.kotlin.gradle.plugin.VariantImplementationFactories
+import org.jetbrains.kotlin.gradle.plugin.internal.DefaultIdeaSyncDetectorVariantFactory
+import org.jetbrains.kotlin.gradle.plugin.internal.IdeaSyncDetector
 import org.jetbrains.kotlin.gradle.targets.js.MultiplePluginDeclarationDetector
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin
 import org.jetbrains.kotlin.gradle.targets.js.npm.RequiresNpmDependencies
@@ -29,6 +32,8 @@ open class YarnPlugin : Plugin<Project> {
         check(project == project.rootProject) {
             "YarnPlugin can be applied only to root project"
         }
+
+        registerVariantImplementations(gradle)
 
         val yarnRootExtension = this.extensions.create(YarnRootExtension.YARN, YarnRootExtension::class.java, this)
         val nodeJs = NodeJsRootPlugin.apply(this)
