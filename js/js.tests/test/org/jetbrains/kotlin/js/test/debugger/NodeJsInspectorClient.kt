@@ -60,32 +60,23 @@ class NodeJsInspectorClient(private val scriptPath: String, private val shareNod
             }
         })
 
-        try {
-            context.listenForMessages { message ->
-                when (val response = decodeCDPResponse(message) { context.messageContinuations[it]!!.encodingInfo }) {
-                    is CDPResponse.Event -> onDebuggerEventCallback?.invoke(context, response.event)
-                    is CDPResponse.MethodInvocationResult -> context.messageContinuations.remove(response.id)!!.continuation.resume(response.result)
-                    is CDPResponse.Error -> context.messageContinuations[response.id]!!.let { (_, continuation, stackTrace) ->
-                        continuation.resumeWithException(
-                            IllegalStateException("error ${response.error.code}" + (response.error.message?.let { ": $it" } ?: "")).apply {
-                                this.stackTrace = stackTrace
-                            }
-                        )
-                    }
+        context.listenForMessages { message ->
+            when (val response = decodeCDPResponse(message) { context.messageContinuations[it]!!.encodingInfo }) {
+                is CDPResponse.Event -> onDebuggerEventCallback?.invoke(context, response.event)
+                is CDPResponse.MethodInvocationResult -> context.messageContinuations.remove(response.id)!!.continuation.resume(response.result)
+                is CDPResponse.Error -> context.messageContinuations[response.id]!!.let { (_, continuation) ->
+                    continuation.resumeWithException(
+                        IllegalStateException("error ${response.error.code}" + (response.error.message?.let { ": $it" } ?: ""))
+                    )
                 }
-                context.waitingOnPredicate?.let { (predicate, continuation, _) ->
-                    if (predicate()) {
-                        context.waitingOnPredicate = null
-                        continuation.resume(Unit)
-                    }
-                }
-                blockResult != null
             }
-        } catch (e: Exception) {
-            val callerStackTrace = context.messageContinuations.values.singleOrNull()?.stackTrace ?: context.waitingOnPredicate?.stackTrace
-            if (callerStackTrace != null)
-                e.stackTrace = callerStackTrace
-            throw e
+            context.waitingOnPredicate?.let { (predicate, continuation) ->
+                if (predicate()) {
+                    context.waitingOnPredicate = null
+                    continuation.resume(Unit)
+                }
+            }
+            blockResult != null
         }
 
         return blockResult!!.getOrThrow()
@@ -168,7 +159,6 @@ private class NodeJsInspectorClientContextImpl : NodeJsInspectorClientContext, C
     data class MessageContinuation(
         val encodingInfo: CDPMethodCallEncodingInfo,
         val continuation: Continuation<CDPMethodInvocationResult>,
-        val stackTrace: Array<StackTraceElement>
     )
 
     val messageContinuations = mutableMapOf<Int, MessageContinuation>()
@@ -176,7 +166,6 @@ private class NodeJsInspectorClientContextImpl : NodeJsInspectorClientContext, C
     data class WaitingOnPredicate(
         val predicate: () -> Boolean,
         val continuation: Continuation<Unit>,
-        val stackTrace: Array<StackTraceElement>,
     )
 
     /**
@@ -222,10 +211,9 @@ private class NodeJsInspectorClientContextImpl : NodeJsInspectorClientContext, C
 
     override suspend fun waitForConditionToBecomeTrue(predicate: () -> Boolean) {
         if (predicate()) return
-        val stacktrace = Thread.currentThread().stackTrace
         suspendCoroutine { continuation ->
             require(waitingOnPredicate == null) { "already waiting!" }
-            waitingOnPredicate = WaitingOnPredicate(predicate, continuation, stacktrace)
+            waitingOnPredicate = WaitingOnPredicate(predicate, continuation)
         }
     }
 
@@ -239,10 +227,9 @@ private class NodeJsInspectorClientContextImpl : NodeJsInspectorClientContext, C
     @Deprecated("Only for debugging purposes", level = DeprecationLevel.WARNING)
     override suspend fun sendPlainTextMessage(methodName: String, paramsJson: String): String {
         val messageId = nextMessageId++
-        val stacktrace = Thread.currentThread().stackTrace
         sendPlainTextMessage("""{"id":$messageId,"method":$methodName,"params":$paramsJson}""")
         return suspendCoroutine { continuation ->
-            messageContinuations[messageId] = MessageContinuation(CDPMethodCallEncodingInfoPlainText, continuation, stacktrace)
+            messageContinuations[messageId] = MessageContinuation(CDPMethodCallEncodingInfoPlainText, continuation)
         }.cast<CDPMethodInvocationResultPlainText>().string
     }
 
@@ -250,11 +237,10 @@ private class NodeJsInspectorClientContextImpl : NodeJsInspectorClientContext, C
         encodeMethodCallWithMessageId: (Int) -> Pair<String, CDPMethodCallEncodingInfo>
     ): CDPMethodInvocationResult {
         val messageId = nextMessageId++
-        val stacktrace = Thread.currentThread().stackTrace
         val (encodedMessage, encodingInfo) = encodeMethodCallWithMessageId(messageId)
         sendPlainTextMessage(encodedMessage)
         return suspendCoroutine { continuation ->
-            messageContinuations[messageId] = MessageContinuation(encodingInfo, continuation, stacktrace)
+            messageContinuations[messageId] = MessageContinuation(encodingInfo, continuation)
         }
     }
 
