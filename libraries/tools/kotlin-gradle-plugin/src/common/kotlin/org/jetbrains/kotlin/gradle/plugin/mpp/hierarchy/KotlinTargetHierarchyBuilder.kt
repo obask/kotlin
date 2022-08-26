@@ -38,9 +38,11 @@ interface KotlinTargetHierarchyBuilder {
     val KotlinTarget.isJs: Boolean get() = this is KotlinJsIrTarget
 }
 
+private typealias KotlinTargetHierarchies = Set<KotlinTargetHierarchy>
+
 internal class KotlinTargetHierarchyBuilderImpl(
     override val compilation: KotlinCompilation<*>,
-    private val allGroups: MutableMap<String, KotlinTargetHierarchyBuilderImpl> = mutableMapOf()
+    private val allGroups: MutableMap<String, KotlinTargetHierarchyBuilderImpl> = mutableMapOf(),
 ) : KotlinTargetHierarchyBuilder {
 
     private val groups = mutableMapOf<String, KotlinTargetHierarchyBuilderImpl>()
@@ -55,12 +57,10 @@ internal class KotlinTargetHierarchyBuilderImpl(
         return build(mutableMapOf())
     }
 
-
-    private fun build(interner: MutableMap<KotlinTargetHierarchy, KotlinTargetHierarchy>): Set<KotlinTargetHierarchy> {
-        /* Build roots */
-        val roots = groups.map { (name, builder) -> KotlinTargetHierarchy(name, builder.build(interner)) }
-            .map { interner.getOrPut(it) { it } }
-            .toSet()
+    private fun build(cache: MutableMap<String /* name */, KotlinTargetHierarchy>): KotlinTargetHierarchies {
+        val roots = groups.map { (name, builder) ->
+            cache.getOrPut(name) { KotlinTargetHierarchy(name, builder.build(cache)) }
+        }.toSet()
 
         /* Filter unnecessary roots that are already present in some other root */
         val childrenClosure = roots.flatMap { root -> root.closure { it.children } }.toSet()
