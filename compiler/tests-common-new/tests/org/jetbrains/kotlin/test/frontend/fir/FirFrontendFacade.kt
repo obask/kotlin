@@ -42,6 +42,7 @@ import org.jetbrains.kotlin.resolve.PlatformDependentAnalyzerServices
 import org.jetbrains.kotlin.resolve.jvm.platform.JvmPlatformAnalyzerServices
 import org.jetbrains.kotlin.resolve.konan.platform.NativePlatformAnalyzerServices
 import org.jetbrains.kotlin.test.TargetBackend
+import org.jetbrains.kotlin.test.directives.ConfigurationDirectives.USE_IR_LINKER
 import org.jetbrains.kotlin.test.directives.FirDiagnosticsDirectives
 import org.jetbrains.kotlin.test.directives.model.DirectivesContainer
 import org.jetbrains.kotlin.test.model.DependencyRelation
@@ -202,6 +203,7 @@ class FirFrontendFacade(
         moduleInfoProvider.registerModuleData(module, session.moduleData)
 
         val enablePluginPhases = FirDiagnosticsDirectives.ENABLE_PLUGIN_PHASES in module.directives
+        val useIrLinker = module.directives.contains(USE_IR_LINKER)
         val firAnalyzerFacade = FirAnalyzerFacade(
             session,
             languageVersionSettings,
@@ -210,7 +212,8 @@ class FirFrontendFacade(
             IrGenerationExtension.getInstances(project),
             lightTreeEnabled,
             enablePluginPhases,
-            generateSignatures = module.targetBackend == TargetBackend.JVM_IR_SERIALIZE
+            generateSignatures = module.targetBackend == TargetBackend.JVM_IR_SERIALIZE || useIrLinker,
+            considerDependencyFiles = !useIrLinker
         )
         val firFiles = firAnalyzerFacade.runResolution()
         val filesMap = firFiles.mapNotNull { firFile ->

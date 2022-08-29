@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.test.Constructor
 import org.jetbrains.kotlin.test.TargetBackend
 import org.jetbrains.kotlin.test.backend.ir.*
 import org.jetbrains.kotlin.test.builders.*
+import org.jetbrains.kotlin.test.directives.ConfigurationDirectives.USE_IR_LINKER
 import org.jetbrains.kotlin.test.directives.JvmEnvironmentConfigurationDirectives.USE_PSI_CLASS_FILES_READING
 import org.jetbrains.kotlin.test.directives.ConfigurationDirectives.WITH_STDLIB
 import org.jetbrains.kotlin.test.directives.LanguageSettingsDirectives
@@ -71,6 +72,12 @@ open class AbstractFirBlackBoxCodegenTest(private val useKLibGenerator: Boolean 
             forTestsMatching("*WithStdLib/*") {
                 defaultDirectives {
                     +WITH_STDLIB
+                }
+            }
+
+            if (useKLibGenerator) {
+                defaultDirectives {
+                    +USE_IR_LINKER
                 }
             }
 

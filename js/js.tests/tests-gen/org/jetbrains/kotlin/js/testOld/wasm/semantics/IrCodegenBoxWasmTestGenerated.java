@@ -20456,6 +20456,11 @@ public class IrCodegenBoxWasmTestGenerated extends AbstractIrCodegenBoxWasmTest 
                 runTest("compiler/testData/codegen/box/multiplatform/multiModule/expectActualMemberLink.kt");
             }
 
+            @TestMetadata("expectActualSimple.kt")
+            public void testExpectActualSimple() throws Exception {
+                runTest("compiler/testData/codegen/box/multiplatform/multiModule/expectActualSimple.kt");
+            }
+
             @TestMetadata("expectActualTypealiasLink.kt")
             public void testExpectActualTypealiasLink() throws Exception {
                 runTest("compiler/testData/codegen/box/multiplatform/multiModule/expectActualTypealiasLink.kt");

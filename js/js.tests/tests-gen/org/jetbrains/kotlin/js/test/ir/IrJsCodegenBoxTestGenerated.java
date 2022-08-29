@@ -22853,6 +22853,12 @@ public class IrJsCodegenBoxTestGenerated extends AbstractIrJsCodegenBoxTest {
             }
 
             @Test
+            @TestMetadata("expectActualSimple.kt")
+            public void testExpectActualSimple() throws Exception {
+                runTest("compiler/testData/codegen/box/multiplatform/multiModule/expectActualSimple.kt");
+            }
+
+            @Test
             @TestMetadata("expectActualTypealiasLink.kt")
             public void testExpectActualTypealiasLink() throws Exception {
                 runTest("compiler/testData/codegen/box/multiplatform/multiModule/expectActualTypealiasLink.kt");
