@@ -1,5 +1,6 @@
 // !LANGUAGE: -UseCorrectExecutionOrderForVarargArguments
 // FIR status: don't support legacy feature
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 // WITH_STDLIB
 // TARGET_BACKEND: JVM
 // IGNORE_BACKEND: JVM_IR

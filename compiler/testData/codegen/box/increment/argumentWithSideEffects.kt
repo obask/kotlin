@@ -1,6 +1,7 @@
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: don't support legacy feature; questionable test, probably should not support.
 // Currently fails because prefix increment only calls getter once.
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 var log = ""
 
 fun <T> logged(value: T): T =

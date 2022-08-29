@@ -24,6 +24,11 @@ object CodegenTestDirectives : SimpleDirectivesContainer() {
         applicability = Global
     )
 
+    val IGNORE_BACKEND_FIR_WITH_IR_LINKER by enumDirective<TargetBackend>(
+        description = "Ignore specific backend if test uses FIR with IR linker",
+        applicability = Global
+    )
+
     val IGNORE_BACKEND_MULTI_MODULE by enumDirective<TargetBackend>(
         description = "Ignore failures of multimodule test on target backend",
         applicability = Global

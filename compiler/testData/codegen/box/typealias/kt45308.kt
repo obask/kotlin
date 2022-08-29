@@ -3,6 +3,7 @@
 
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: reports RETURN_TYPE_MISMATCH: Return type mismatch: expected kotlin/String, actual a/A
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 
 // MODULE: a
 // FILE: a.kt

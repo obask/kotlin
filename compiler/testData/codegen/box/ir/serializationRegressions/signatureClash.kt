@@ -6,6 +6,7 @@
 // IGNORE_BACKEND: NATIVE
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: validation failed. TODO decide if we want to fix KT-42020 for FIR as well
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 // MODULE: lib
 // FILE: lib.kt
 

@@ -4,6 +4,7 @@
 // FIR status:
 //  java.lang.StackOverflowError
 //	at Nat$Companion$invoke$1.next(kt36853_fibonacci.kt:40) ...
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 
 fun box(): String {
     Nat<Int>(

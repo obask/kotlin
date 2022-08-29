@@ -1,5 +1,6 @@
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: wrong ABSTRACT_MEMBER_NOT_IMPLEMENTED, probably provoked by override mapping error
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 // TARGET_BACKEND: JVM
 
 // WITH_STDLIB

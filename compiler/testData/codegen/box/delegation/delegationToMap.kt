@@ -6,6 +6,7 @@
 // FE1.0 + JVM_IR:
 //  INVOKEVIRTUAL Test.remove (Ljava/lang/Object;Ljava/lang/Object;)Z
 //      => default method in java.util.Map (as expected)
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 
 // SKIP_JDK6
 // TARGET_BACKEND: JVM

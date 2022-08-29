@@ -1,6 +1,7 @@
 // TARGET_BACKEND: JVM
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: Fail 2: kotlin.collections.List<kotlin.String!>
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 // WITH_REFLECT
 // FILE: box.kt
 

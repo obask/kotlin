@@ -4,6 +4,7 @@
 // IGNORE_BACKEND: JS_IR_ES6
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: value: 0 should have type Long
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 // WITH_STDLIB
 
 // FILE: J.java

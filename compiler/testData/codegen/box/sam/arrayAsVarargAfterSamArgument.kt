@@ -1,6 +1,7 @@
 // !LANGUAGE: -ProhibitVarargAsArrayAfterSamArgument
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: don't support legacy feature
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 // TARGET_BACKEND: JVM
 
 // FILE: Test.java

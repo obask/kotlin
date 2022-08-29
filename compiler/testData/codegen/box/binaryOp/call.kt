@@ -1,6 +1,7 @@
 // LANGUAGE: -ApproximateIntegerLiteralTypesInReceiverPosition
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: don't support legacy feature; for reasons this test is ignored, go to KT-46419
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 
 fun box(): String {
     val a1: Byte = 1.plus(1)

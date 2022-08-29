@@ -5,6 +5,7 @@
 // IGNORE_BACKEND: JS_IR_ES6
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: expect/actual in the same module (ACTUAL_WITHOUT_EXPECT)
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 // MODULE: lib
 // FILE: common.kt
 

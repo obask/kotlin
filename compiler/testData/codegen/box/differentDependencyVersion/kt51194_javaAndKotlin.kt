@@ -4,6 +4,7 @@
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: FIR correctly reports CONFLICTING_INHERITED_MEMBERS, so this test should not pass design
 //   For details see related issue
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 
 // MODULE: coreLib_1
 // FILE: Base.java

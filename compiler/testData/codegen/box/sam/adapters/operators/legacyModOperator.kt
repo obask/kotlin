@@ -2,6 +2,7 @@
 // !LANGUAGE: -ProhibitOperatorMod
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: don't support legacy feature
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 // MODULE: lib
 // FILE: Java.java
 

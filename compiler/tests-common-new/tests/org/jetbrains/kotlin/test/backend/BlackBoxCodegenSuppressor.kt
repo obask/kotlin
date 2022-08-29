@@ -11,6 +11,8 @@ import org.jetbrains.kotlin.test.bind
 import org.jetbrains.kotlin.test.directives.CodegenTestDirectives
 import org.jetbrains.kotlin.test.directives.CodegenTestDirectives.IGNORE_BACKEND
 import org.jetbrains.kotlin.test.directives.CodegenTestDirectives.IGNORE_BACKEND_FIR
+import org.jetbrains.kotlin.test.directives.CodegenTestDirectives.IGNORE_BACKEND_FIR_WITH_IR_LINKER
+import org.jetbrains.kotlin.test.directives.ConfigurationDirectives.USE_IR_LINKER
 import org.jetbrains.kotlin.test.directives.model.DirectivesContainer
 import org.jetbrains.kotlin.test.directives.model.ValueDirective
 import org.jetbrains.kotlin.test.model.AfterAnalysisChecker
@@ -61,7 +63,10 @@ class BlackBoxCodegenSuppressor(
         fun extractIgnoreDirective(module: TestModule): ValueDirective<TargetBackend>? {
             return when (module.frontendKind) {
                 FrontendKinds.ClassicFrontend -> customIgnoreDirective ?: IGNORE_BACKEND
-                FrontendKinds.FIR -> customIgnoreDirective ?: IGNORE_BACKEND_FIR
+                FrontendKinds.FIR -> customIgnoreDirective ?: if (module.directives.contains(USE_IR_LINKER))
+                    IGNORE_BACKEND_FIR_WITH_IR_LINKER
+                else
+                    IGNORE_BACKEND_FIR
                 else -> null
             }
         }

@@ -3,6 +3,7 @@
 // WITH_STDLIB
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: NONE_APPLICABLE at all equals calls
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 import kotlin.experimental.ExperimentalTypeInference
 
 interface TestInterface<R> {

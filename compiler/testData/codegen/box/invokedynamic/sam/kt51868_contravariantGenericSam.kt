@@ -1,6 +1,7 @@
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: "ClassCastException: String cannot be cast to StringBuilder".
 // FIR always takes the parameter type and erases type projections in it to obtain the SAM type. This is incorrect, see KT-51868 and KT-52428.
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 
 // TARGET_BACKEND: JVM
 // JVM_TARGET: 1.8

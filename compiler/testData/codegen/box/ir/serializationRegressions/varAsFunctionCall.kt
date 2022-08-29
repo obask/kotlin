@@ -1,5 +1,6 @@
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: ARGUMENT_TYPE_MISMATCH at ok.z(fail), actual String, expected T
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 // MODULE: lib
 // FILE: l1.kt
 

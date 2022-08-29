@@ -1,6 +1,7 @@
 // TARGET_BACKEND: JVM
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: BKt$box$get$1 cannot be cast to kotlin.reflect.KMutableProperty0
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 // WITH_STDLIB
 // MODULE: lib
 // FILE: A.kt

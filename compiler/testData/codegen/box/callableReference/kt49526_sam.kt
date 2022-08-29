@@ -4,6 +4,7 @@
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR_STATUS: LambdaConversionException: Type mismatch for lambda argument 1: class java.lang.Object is not convertible to interface I1
 // JVM_IR it this case has an approximated type 'KFun<out Any>', which has a projected top-level argument.
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 
 fun <T> intersect(x: T, y: T): T = x
 

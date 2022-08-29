@@ -2,6 +2,7 @@
 // IGNORE_BACKEND: JVM, JVM_IR
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: not supported in JVM
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 
 fun <T : IntArray> test(array: T): Int {
     var sum = 0

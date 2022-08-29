@@ -1,5 +1,6 @@
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: some error in resolve (FirErrorNamedReferenceImpl in FIR)
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 // TARGET_BACKEND: JVM
 // WITH_STDLIB
 // WITH_COROUTINES

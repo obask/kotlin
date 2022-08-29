@@ -2,6 +2,7 @@
 // TARGET_BACKEND: JVM
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: KotlinNothingValueException from create()
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 
 fun <T : A> create(modelClass: Class<T>): T {
     return if (modelClass.isAssignableFrom(B::class.java)) {

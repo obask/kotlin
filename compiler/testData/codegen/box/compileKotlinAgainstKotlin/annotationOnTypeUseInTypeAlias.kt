@@ -1,5 +1,6 @@
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: List is empty for val argumentType = mycType.arguments.single().type!!
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 // TARGET_BACKEND: JVM
 // WITH_REFLECT
 // MODULE: lib

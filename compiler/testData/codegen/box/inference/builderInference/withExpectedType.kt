@@ -3,6 +3,7 @@
 // !DIAGNOSTICS: -OPT_IN_USAGE_ERROR -CAST_NEVER_SUCCEEDS
 // IGNORE_BACKEND_FIR: JVM_IR
 // FIR status: Initializer type mismatch at first val x = : expected kotlin/collections/MutableList<kotlin/CharSequence>, actual kotlin/collections/MutableList<kotlin/String>
+// IGNORE_BACKEND_FIR_WITH_IR_LINKER: JVM_IR
 
 import kotlin.experimental.ExperimentalTypeInference
 
