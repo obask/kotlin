@@ -76,6 +76,29 @@ abstract class AbstractJsConfigurationCacheIT(protected val irBackend: Boolean) 
         }
     }
 
+    @DisplayName("configuration cache with ideaSyncDetector is working when yarnPlugin applied")
+    @GradleTestVersions(minVersion = TestVersions.Gradle.G_7_5, maxVersion = TestVersions.Gradle.G_7_5)
+    @GradleTest
+    fun testBrowserDistributionOnIdeaPropertyWithYarnPlugin(gradleVersion: GradleVersion) {
+        project("kotlin-js-browser-project", gradleVersion) {
+            buildGradleKts.modify { originalScript ->
+                originalScript + "\n" +
+                        "apply<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin>()"
+            }
+            build(":app:build")
+            // check IdeaPropertiesEvaluator for the logic
+            build(":app:build", "-Didea.version=2020.1") {
+                assertConfigurationCacheReused()
+                assertTasksUpToDate(
+                    ":app:packageJson",
+                    ":app:publicPackageJson",
+                    if (irBackend) ":app:compileProductionExecutableKotlinJs" else ":app:processDceKotlinJs",
+                    ":app:browserProductionWebpack",
+                )
+            }
+        }
+    }
+
     @DisplayName("configuration cache is working for kotlin/js node project")
     @GradleTest
     fun testNodeJs(gradleVersion: GradleVersion) {
