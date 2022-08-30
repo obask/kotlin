@@ -19,14 +19,24 @@ private class CompositePhase<Context : CommonBackendContext, Input, Output>(
 
     override fun invoke(phaseConfig: PhaseConfig, phaserState: PhaserState<Input>, context: Context, input: Input): Output {
         @Suppress("UNCHECKED_CAST") var currentState = phaserState as PhaserState<Any?>
-        var result = phases.first().invoke(phaseConfig, currentState, context, input)
-        for ((previous, next) in phases.zip(phases.drop(1))) {
-            if (next !is SameTypeCompilerPhase<*, *>) {
-                // Discard `stickyPostconditions`, they are useless since data type is changing.
-                currentState = currentState.changeType()
+        var previous: CompilerPhase<Context, Any?, Any?>? = null
+        var current: CompilerPhase<Context, Any?, Any?>?
+        var result: Any? = null
+        for (index in phases.indices) {
+            current = phases[index]
+            val currentInput: Any
+            if (index > 0) {
+                if (current !is SameTypeCompilerPhase<*, *>) {
+                    // Discard `stickyPostconditions`, they are useless since data type is changing.
+                    currentState = currentState.changeType()
+                }
+                currentState.stickyPostconditions.addAll(previous!!.stickyPostconditions)
+                currentInput = result!!
+            } else {
+                currentInput = input as Any
             }
-            currentState.stickyPostconditions.addAll(previous.stickyPostconditions)
-            result = next.invoke(phaseConfig, currentState, context, result)
+            result = current.invoke(phaseConfig, currentState, context, currentInput)
+            previous = current
         }
         @Suppress("UNCHECKED_CAST")
         return result as Output
