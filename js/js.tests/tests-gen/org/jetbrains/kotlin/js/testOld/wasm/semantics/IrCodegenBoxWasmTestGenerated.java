@@ -29285,6 +29285,11 @@ public class IrCodegenBoxWasmTestGenerated extends AbstractIrCodegenBoxWasmTest 
                 runTest("compiler/testData/codegen/box/reflection/typeOf/multipleLayers.kt");
             }
 
+            @TestMetadata("reifiedAsNestedArgument.kt")
+            public void testReifiedAsNestedArgument() throws Exception {
+                runTest("compiler/testData/codegen/box/reflection/typeOf/reifiedAsNestedArgument.kt");
+            }
+
             @TestMetadata("typeOfCapturedStar.kt")
             public void testTypeOfCapturedStar() throws Exception {
                 runTest("compiler/testData/codegen/box/reflection/typeOf/typeOfCapturedStar.kt");

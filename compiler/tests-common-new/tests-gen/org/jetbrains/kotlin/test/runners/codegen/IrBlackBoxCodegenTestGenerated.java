@@ -44557,6 +44557,12 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
             }
 
             @Test
+            @TestMetadata("reifiedAsNestedArgument.kt")
+            public void testReifiedAsNestedArgument() throws Exception {
+                runTest("compiler/testData/codegen/box/reflection/typeOf/reifiedAsNestedArgument.kt");
+            }
+
+            @Test
             @TestMetadata("typeOfCapturedStar.kt")
             public void testTypeOfCapturedStar() throws Exception {
                 runTest("compiler/testData/codegen/box/reflection/typeOf/typeOfCapturedStar.kt");

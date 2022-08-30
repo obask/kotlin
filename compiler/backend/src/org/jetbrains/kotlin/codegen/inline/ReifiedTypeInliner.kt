@@ -145,10 +145,7 @@ class ReifiedTypeInliner<KT : KotlinTypeMarker>(
         val result = ReifiedTypeParametersUsages()
         for (insn in instructions.toArray()) {
             if (isOperationReifiedMarker(insn)) {
-                val newName: String? = processReifyMarker(insn as MethodInsnNode, instructions)
-                if (newName != null) {
-                    result.addUsedReifiedParameter(newName)
-                }
+                processReifyMarker(insn as MethodInsnNode, instructions, result)
             }
         }
 
@@ -156,43 +153,48 @@ class ReifiedTypeInliner<KT : KotlinTypeMarker>(
         return result
     }
 
-    /**
-     * @return new type parameter identifier if this marker should be reified further
-     * or null if it shouldn't
-     */
-    private fun processReifyMarker(insn: MethodInsnNode, instructions: InsnList): String? {
-        val operationKind = insn.operationKind ?: return null
-        val reificationArgument = insn.reificationArgument ?: return null
-        val mapping = parametersMapping?.get(reificationArgument.parameterName) ?: return null
+    private fun processReifyMarker(insn: MethodInsnNode, instructions: InsnList, result: ReifiedTypeParametersUsages) {
+        val operationKind = insn.operationKind ?: return
+        val reificationArgument = insn.reificationArgument ?: return
+        val mapping = parametersMapping?.get(reificationArgument.parameterName) ?: return
 
         if (mapping.asmType != null) {
+            val (asmType, type) = reify(reificationArgument, mapping.asmType, mapping.type)
+            val kotlinType = intrinsicsSupport.toKotlinType(type)
             // process* methods return false if marker should be reified further
             // or it's invalid (may be emitted explicitly in code)
             // they return true if instruction is reified and marker can be deleted
-            val (asmType, type) = reify(reificationArgument, mapping.asmType, mapping.type)
-
-            val kotlinType = intrinsicsSupport.toKotlinType(type)
-
-            if (when (operationKind) {
-                    OperationKind.NEW_ARRAY -> processNewArray(insn, asmType)
-                    OperationKind.AS -> processAs(insn, instructions, kotlinType, asmType, safe = false)
-                    OperationKind.SAFE_AS -> processAs(insn, instructions, kotlinType, asmType, safe = true)
-                    OperationKind.IS -> processIs(insn, instructions, kotlinType, asmType)
-                    OperationKind.JAVA_CLASS -> processJavaClass(insn, asmType)
-                    OperationKind.ENUM_REIFIED -> processSpecialEnumFunction(insn, instructions, asmType)
-                    OperationKind.TYPE_OF -> processTypeOf(insn, instructions, type)
-                }
-            ) {
+            val matched = when (operationKind) {
+                // These operations take strictly runtime-available types, which are
+                //  * class types with all arguments being star projections;
+                //  * reified type parameter references;
+                //  * arrays of runtime-available types.
+                // As such, if we have a concrete type for them, it cannot reference any more reified type parameters.
+                // The case of a reified type parameter substituted with another reified type parameter or an array of such
+                // is handled below.
+                OperationKind.NEW_ARRAY -> processNewArray(insn, asmType)
+                OperationKind.AS -> processAs(insn, instructions, kotlinType, asmType, safe = false)
+                OperationKind.SAFE_AS -> processAs(insn, instructions, kotlinType, asmType, safe = true)
+                OperationKind.IS -> processIs(insn, instructions, kotlinType, asmType)
+                OperationKind.JAVA_CLASS -> processJavaClass(insn, asmType)
+                OperationKind.ENUM_REIFIED -> processSpecialEnumFunction(insn, instructions, asmType)
+                // typeOf is special in that it needs stronger guarantees than what runtime-available types provide.
+                // If `V` is a reified type parameter substituted with, say, `List<T>` where `T` is another reified type
+                // parameter, then `typeOf<V>()` is NOT equivalent to `typeOf<List<*>>()` - `typeOf<List<T>>()` will
+                // have to be reified further and the use of `T` needs to be marked.
+                OperationKind.TYPE_OF -> processTypeOf(insn, instructions, type, result)
+            }
+            if (matched) {
                 instructions.remove(insn.previous.previous!!) // PUSH operation ID
                 instructions.remove(insn.previous!!) // PUSH type parameter
                 instructions.remove(insn) // INVOKESTATIC marker method
             }
-
-            return null
+            // TODO: else the bytecode is wrong? E.g. the operation might have been an unused `T::class` which got removed
+            //   by dead code elimination, leaving behind only a reified operation marker which will throw at runtime.
         } else {
             val newReificationArgument = reificationArgument.combine(mapping.reificationArgument!!)
             instructions.set(insn.previous!!, LdcInsnNode(newReificationArgument.asString()))
-            return mapping.reificationArgument.parameterName
+            result.addUsedReifiedParameter(mapping.reificationArgument.parameterName)
         }
     }
 
@@ -267,11 +269,12 @@ class ReifiedTypeInliner<KT : KotlinTypeMarker>(
     private fun processTypeOf(
         insn: MethodInsnNode,
         instructions: InsnList,
-        type: KT
+        type: KT,
+        result: ReifiedTypeParametersUsages
     ) = rewriteNextTypeInsn(insn, Opcodes.ACONST_NULL) { stubConstNull: AbstractInsnNode ->
         val newMethodNode = MethodNode(Opcodes.API_VERSION, "fake", "()V", null, null)
         val mv = wrapWithMaxLocalCalc(newMethodNode)
-        typeSystem.generateTypeOf(InstructionAdapter(mv), type, intrinsicsSupport)
+        typeSystem.generateTypeOf(InstructionAdapter(mv), type, intrinsicsSupport, result)
 
         // Adding a fake return (and removing it below) to trigger maxStack calculation
         mv.visitInsn(Opcodes.RETURN)
