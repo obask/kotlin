@@ -202,8 +202,6 @@ class K2JsIrCompiler : CLICompiler<K2JSCompilerArguments>() {
 
         val keep: List<String> = arguments.irKeep?.splitByPathSeparator() ?: emptyList()
 
-        configuration.put(JSConfigurationKeys.IR_KEEP, keep)
-
         configuration.put(JSConfigurationKeys.LIBRARIES, libraries)
         configuration.put(JSConfigurationKeys.TRANSITIVE_LIBRARIES, libraries)
         configuration.put(JSConfigurationKeys.REPOSITORIES, repositories)
