@@ -30,58 +30,54 @@ internal fun TypeSystemCommonBackendContext.createTypeOfMethodBody(typeParameter
     return node
 }
 
+private inline fun InstructionAdapter.unrollArrayIfFewerThan(n: Int, limit: Int, type: Type, element: (Int) -> Unit): Array<Type> {
+    if (n < limit) {
+        return Array(n) { i ->
+            element(i)
+            type
+        }
+    }
+    iconst(n)
+    newarray(type)
+    for (i in 0 until n) {
+        dup()
+        iconst(i)
+        element(i)
+        astore(type)
+    }
+    return arrayOf(AsmUtil.getArrayType(type))
+}
+
 fun <KT : KotlinTypeMarker> TypeSystemCommonBackendContext.generateTypeOf(
-    v: InstructionAdapter, type: KT, intrinsicsSupport: ReifiedTypeInliner.IntrinsicsSupport<KT>,
-    reifiedTypeParametersUsages: ReifiedTypeParametersUsages
+    v: InstructionAdapter, type: KT, intrinsicsSupport: ReifiedTypeInliner.IntrinsicsSupport<KT>
+) = generateTypeOf(v, type, intrinsicsSupport, isTypeParameterBound = false)
+
+private fun <KT : KotlinTypeMarker> TypeSystemCommonBackendContext.generateTypeOf(
+    v: InstructionAdapter, type: KT, intrinsicsSupport: ReifiedTypeInliner.IntrinsicsSupport<KT>, isTypeParameterBound: Boolean
 ) {
     val typeParameter = type.typeConstructor().getTypeParameterClassifier()
-    if (typeParameter != null) {
-        if (typeReferencesParameterWithRecursiveBound(type)) {
-            intrinsicsSupport.reportNonReifiedTypeParameterWithRecursiveBoundUnsupported(typeParameter.getName())
-            v.aconst(null)
-            return
-        }
-
-        generateNonReifiedTypeParameter(v, typeParameter, intrinsicsSupport, reifiedTypeParametersUsages)
-    } else {
+    val methodArguments = if (typeParameter == null) {
         intrinsicsSupport.putClassInstance(v, type)
-    }
-
-    val argumentsSize = type.argumentsCount()
-    val useArray = argumentsSize >= 3
-
-    if (useArray) {
-        v.iconst(argumentsSize)
-        v.newarray(K_TYPE_PROJECTION)
-    }
-
-    for (i in 0 until argumentsSize) {
-        if (useArray) {
-            v.dup()
-            v.iconst(i)
+        val arguments = v.unrollArrayIfFewerThan(type.argumentsCount(), 3, K_TYPE_PROJECTION) { i ->
+            generateTypeOfArgument(v, type.getArgument(i), intrinsicsSupport, isTypeParameterBound)
         }
-
-        doGenerateTypeProjection(v, type.getArgument(i), intrinsicsSupport, reifiedTypeParametersUsages)
-
-        if (useArray) {
-            v.astore(K_TYPE_PROJECTION)
-        }
+        arrayOf(JAVA_CLASS_TYPE, *arguments)
+    } else if (!isTypeParameterBound && typeParameter.isReified()) {
+        val argument = ReificationArgument(typeParameter.getName().asString(), type.isMarkedNullable(), 0)
+        ReifiedTypeInliner.putReifiedOperationMarker(ReifiedTypeInliner.OperationKind.TYPE_OF, argument, v)
+        v.aconst(null)
+        return
+    } else if (typeReferencesParameterWithRecursiveBound(type)) {
+        intrinsicsSupport.reportNonReifiedTypeParameterWithRecursiveBoundUnsupported(typeParameter.getName())
+        v.aconst(null)
+        return
+    } else {
+        generateNonReifiedTypeParameter(v, typeParameter, intrinsicsSupport)
+        arrayOf(K_CLASSIFIER_TYPE)
     }
 
     val methodName = if (type.isMarkedNullable()) "nullableTypeOf" else "typeOf"
-
-    val signature = if (typeParameter != null) {
-        Type.getMethodDescriptor(K_TYPE, K_CLASSIFIER_TYPE)
-    } else {
-        val projections = when (argumentsSize) {
-            0 -> emptyArray()
-            1 -> arrayOf(K_TYPE_PROJECTION)
-            2 -> arrayOf(K_TYPE_PROJECTION, K_TYPE_PROJECTION)
-            else -> arrayOf(AsmUtil.getArrayType(K_TYPE_PROJECTION))
-        }
-        Type.getMethodDescriptor(K_TYPE, JAVA_CLASS_TYPE, *projections)
-    }
-
+    val signature = Type.getMethodDescriptor(K_TYPE, *methodArguments)
     v.invokestatic(REFLECTION, methodName, signature, false)
 
     if (intrinsicsSupport.toKotlinType(type).isSuspendFunctionType) {
@@ -99,7 +95,7 @@ fun <KT : KotlinTypeMarker> TypeSystemCommonBackendContext.generateTypeOf(
             // If this is a flexible type, we've just generated its lower bound and have it on the stack.
             // Let's generate the upper bound now and call the method that takes lower and upper bound and constructs a flexible KType.
             @Suppress("UNCHECKED_CAST")
-            generateTypeOf(v, type.upperBoundIfFlexible() as KT, intrinsicsSupport, reifiedTypeParametersUsages)
+            generateTypeOf(v, type.upperBoundIfFlexible() as KT, intrinsicsSupport, isTypeParameterBound)
 
             v.invokestatic(REFLECTION, "platformType", Type.getMethodDescriptor(K_TYPE, K_TYPE, K_TYPE), false)
         }
@@ -107,8 +103,7 @@ fun <KT : KotlinTypeMarker> TypeSystemCommonBackendContext.generateTypeOf(
 }
 
 private fun <KT : KotlinTypeMarker> TypeSystemCommonBackendContext.generateNonReifiedTypeParameter(
-    v: InstructionAdapter, typeParameter: TypeParameterMarker, intrinsicsSupport: ReifiedTypeInliner.IntrinsicsSupport<KT>,
-    reifiedTypeParametersUsages: ReifiedTypeParametersUsages
+    v: InstructionAdapter, typeParameter: TypeParameterMarker, intrinsicsSupport: ReifiedTypeInliner.IntrinsicsSupport<KT>
 ) {
     intrinsicsSupport.generateTypeParameterContainer(v, typeParameter)
 
@@ -126,30 +121,15 @@ private fun <KT : KotlinTypeMarker> TypeSystemCommonBackendContext.generateNonRe
         false,
     )
 
-    @Suppress("UNCHECKED_CAST")
-    val bounds = (0 until typeParameter.upperBoundCount()).map { typeParameter.getUpperBound(it) as KT }
-    if (bounds.isEmpty()) return
+    if (typeParameter.upperBoundCount() == 0) return
 
     v.dup()
-
-    if (bounds.size == 1) {
-        generateTypeOf(v, bounds.single(), intrinsicsSupport, reifiedTypeParametersUsages)
-    } else {
-        v.iconst(bounds.size)
-        v.newarray(K_TYPE)
-        for ((i, bound) in bounds.withIndex()) {
-            v.dup()
-            v.iconst(i)
-            generateTypeOf(v, bound, intrinsicsSupport, reifiedTypeParametersUsages)
-            v.astore(K_TYPE)
-        }
+    val argumentsForBounds = v.unrollArrayIfFewerThan(typeParameter.upperBoundCount(), 2, K_TYPE) { i ->
+        @Suppress("UNCHECKED_CAST")
+        generateTypeOf(v, typeParameter.getUpperBound(i) as KT, intrinsicsSupport, isTypeParameterBound = true)
     }
-
     v.invokestatic(
-        REFLECTION, "setUpperBounds", Type.getMethodDescriptor(
-            Type.VOID_TYPE, K_TYPE_PARAMETER,
-            if (bounds.size == 1) K_TYPE else AsmUtil.getArrayType(K_TYPE)
-        ),
+        REFLECTION, "setUpperBounds", Type.getMethodDescriptor(Type.VOID_TYPE, K_TYPE_PARAMETER, *argumentsForBounds),
         false
     )
 }
@@ -174,32 +154,21 @@ private fun TypeSystemCommonBackendContext.typeReferencesParameterWithRecursiveB
     return false
 }
 
-private fun <KT : KotlinTypeMarker> TypeSystemCommonBackendContext.doGenerateTypeProjection(
+private fun <KT : KotlinTypeMarker> TypeSystemCommonBackendContext.generateTypeOfArgument(
     v: InstructionAdapter,
     projection: TypeArgumentMarker,
     intrinsicsSupport: ReifiedTypeInliner.IntrinsicsSupport<KT>,
-    reifiedTypeParametersUsages: ReifiedTypeParametersUsages
+    isTypeParameterBound: Boolean,
 ) {
-    // KTypeProjection members could be static, see KT-30083 and KT-30084
+    // KTypeProjection companion members could be made `@JvmStatic`, see KT-30083 and KT-30084
     v.getstatic(K_TYPE_PROJECTION.internalName, "Companion", K_TYPE_PROJECTION_COMPANION.descriptor)
-
     if (projection.isStarProjection()) {
         v.invokevirtual(K_TYPE_PROJECTION_COMPANION.internalName, "getSTAR", Type.getMethodDescriptor(K_TYPE_PROJECTION), false)
         return
     }
 
     @Suppress("UNCHECKED_CAST")
-    val type = projection.getType() as KT
-    val typeParameterClassifier = type.typeConstructor().getTypeParameterClassifier()
-    if (typeParameterClassifier?.isReified() == true) {
-        reifiedTypeParametersUsages.addUsedReifiedParameter(typeParameterClassifier.getName().asString())
-        val argument = ReificationArgument(typeParameterClassifier.getName().asString(), type.isMarkedNullable(), 0)
-        ReifiedTypeInliner.putReifiedOperationMarker(ReifiedTypeInliner.OperationKind.TYPE_OF, argument, v)
-        v.aconst(null)
-    } else {
-        generateTypeOf(v, type, intrinsicsSupport, reifiedTypeParametersUsages)
-    }
-
+    generateTypeOf(v, projection.getType() as KT, intrinsicsSupport, isTypeParameterBound)
     val methodName = when (projection.getVariance()) {
         TypeVariance.INV -> "invariant"
         TypeVariance.IN -> "contravariant"
