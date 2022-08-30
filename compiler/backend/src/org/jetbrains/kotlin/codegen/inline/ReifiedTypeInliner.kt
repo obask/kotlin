@@ -161,13 +161,14 @@ class ReifiedTypeInliner<KT : KotlinTypeMarker>(
         val reificationArgument = insn.reificationArgument ?: return
         val mapping = parametersMapping?.get(reificationArgument.parameterName) ?: return
 
-        if (mapping.asmType != null) {
-            val (asmType, type) = reify(reificationArgument, mapping.asmType, mapping.type)
+        val removeMarker = if (mapping.reificationArgument == null) {
+            val asmType = mapping.asmType.reify(reificationArgument)
+            val type = mapping.type.reify(reificationArgument)
             val kotlinType = intrinsicsSupport.toKotlinType(type)
             // TODO: if `process*` returns false, then the marked sequence is invalid - simply leaving the marker in place
             //   will lead to an exception at runtime. What to do instead? Possible that the bytecode has been removed by
             //   dead code elimination (e.g. result of `T::class.java` was unused) and now we only need to erase the marker.
-            val matched = when (operationKind) {
+            when (operationKind) {
                 OperationKind.NEW_ARRAY -> processNewArray(insn, asmType)
                 OperationKind.AS -> processAs(insn, instructions, kotlinType, asmType, safe = false)
                 OperationKind.SAFE_AS -> processAs(insn, instructions, kotlinType, asmType, safe = true)
@@ -176,29 +177,32 @@ class ReifiedTypeInliner<KT : KotlinTypeMarker>(
                 OperationKind.ENUM_REIFIED -> processSpecialEnumFunction(insn, instructions, asmType)
                 OperationKind.TYPE_OF -> processTypeOf(insn, instructions, type)
             }
-            if (matched) {
-                instructions.remove(insn.previous.previous!!) // PUSH operation ID
-                instructions.remove(insn.previous!!) // PUSH type parameter
-                instructions.remove(insn) // INVOKESTATIC marker method
-            }
+        } else if (operationKind == OperationKind.TYPE_OF) {
+            // Partial reification; e.g. `typeOf<T>()` with T = Array<V> can have the Array<...> part pregenerated,
+            // which avoids losing nullability info if T = Array<V?>.
+            processTypeOf(insn, instructions, mapping.type.reify(reificationArgument))
         } else {
-            // TODO: partial reification; e.g. `typeOf<T>()` with T = Array<V> can have the Array<...> part pregenerated
-            //   (which would also avoid losing nullability info if T = Array<V?>)
-            val newReificationArgument = reificationArgument.combine(mapping.reificationArgument!!)
+            val newReificationArgument = reificationArgument.combine(mapping.reificationArgument)
             instructions.set(insn.previous!!, LdcInsnNode(newReificationArgument.asString()))
+            false
         }
-        result.mergeAll(mapping.reifiedTypeParametersInArguments)
+        if (removeMarker) {
+            instructions.remove(insn.previous.previous!!) // PUSH operation ID
+            instructions.remove(insn.previous!!) // PUSH type parameter
+            instructions.remove(insn) // INVOKESTATIC marker method
+        }
+        result.mergeAll(mapping.reifiedTypeParametersUsages)
     }
 
-    private fun reify(argument: ReificationArgument, replacementAsmType: Type, type: KT): Pair<Type, KT> =
+    @Suppress("UNCHECKED_CAST")
+    private fun KT.reify(argument: ReificationArgument): KT =
         with(typeSystem) {
-            val arrayType = type.arrayOf(argument.arrayDepth)
-            @Suppress("UNCHECKED_CAST")
-            Pair(
-                Type.getType("[".repeat(argument.arrayDepth) + replacementAsmType),
-                (if (argument.nullable) arrayType.makeNullable() else arrayType) as KT
-            )
-        }
+            val withArrays = arrayOf(argument.arrayDepth)
+            if (argument.nullable) withArrays.makeNullable() else withArrays
+        } as KT
+
+    private fun Type.reify(argument: ReificationArgument): Type =
+        Type.getType("[".repeat(argument.arrayDepth) + this)
 
     private fun KotlinTypeMarker.arrayOf(arrayDepth: Int): KotlinTypeMarker {
         var currentType = this
@@ -360,9 +364,8 @@ class TypeParameterMappings<KT : KotlinTypeMarker>(
                 val name = parameter.getName().identifier
                 val reified = typeSystem.extractReificationArgument(type)
                 val sw = BothSignatureWriter(BothSignatureWriter.Mode.TYPE)
-                val asmType = if (reified != null) null else mapType(type, sw)
                 mappingsByName[name] = TypeParameterMapping(
-                    name, type, asmType, reified?.second, sw.toString(), allReified || parameter.isReified(),
+                    name, type, mapType(type, sw), reified?.second, sw.toString(), allReified || parameter.isReified(),
                     typeSystem.extractUsedReifiedParameters(type)
                 )
             }
@@ -373,19 +376,18 @@ class TypeParameterMappings<KT : KotlinTypeMarker>(
 
     fun hasReifiedParameters() = mappingsByName.values.any { it.isReified }
 
-    internal inline fun forEach(l: (TypeParameterMapping<KT>) -> Unit) {
-        mappingsByName.values.forEach(l)
-    }
+    internal inline fun forEach(block: (String, TypeParameterMapping<KT>) -> Unit) =
+        mappingsByName.entries.forEach { (name, mapping) -> block(name, mapping)}
 }
 
 class TypeParameterMapping<KT : KotlinTypeMarker>(
     val name: String,
     val type: KT,
-    val asmType: Type?,
+    val asmType: Type,
     val reificationArgument: ReificationArgument?,
-    val signature: String?,
+    val signature: String,
     val isReified: Boolean,
-    val reifiedTypeParametersInArguments: ReifiedTypeParametersUsages,
+    val reifiedTypeParametersUsages: ReifiedTypeParametersUsages,
 )
 
 class ReifiedTypeParametersUsages {

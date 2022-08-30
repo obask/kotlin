@@ -45882,6 +45882,12 @@ public class FirBlackBoxCodegenTestGenerated extends AbstractFirBlackBoxCodegenT
         }
 
         @Test
+        @TestMetadata("typeTokenWrapper.kt")
+        public void testTypeTokenWrapper() throws Exception {
+            runTest("compiler/testData/codegen/box/reified/typeTokenWrapper.kt");
+        }
+
+        @Test
         @TestMetadata("varargs.kt")
         public void testVarargs() throws Exception {
             runTest("compiler/testData/codegen/box/reified/varargs.kt");
