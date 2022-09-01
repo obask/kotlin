@@ -82,8 +82,25 @@ NO_EXTERNAL_CALLS_CHECK bool kotlin::mm::RequestThreadsSuspension() noexcept {
 
 void kotlin::mm::WaitForThreadsSuspension() noexcept {
     // Spin wating for threads to suspend. Ignore Native threads.
+    int iter = 0;
     while(!allThreads(isSuspendedOrNative)) {
         yield();
+        if (iter++ == 10000) {
+            iter = 0;
+            auto& threadRegistry = kotlin::mm::ThreadRegistry::Instance();
+            auto* currentThread = (threadRegistry.IsCurrentThreadRegistered())
+                    ? threadRegistry.CurrentThreadData()
+                    : nullptr;
+            kotlin::mm::ThreadRegistry::Iterable threads = kotlin::mm::ThreadRegistry::Instance().LockForIter();
+            for (auto& thread : threads) {
+                // Handle if suspension was initiated by the mutator thread.
+                if (&thread == currentThread)
+                    continue;
+                if (!isSuspendedOrNative(thread)) {
+                    fprintf(stderr, "Thread %d is still not suspended\n", thread.threadId());
+                }
+            }
+        }
     }
 }
 

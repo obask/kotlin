@@ -9,6 +9,7 @@
 #include "ExtraObjectData.hpp"
 #include "FinalizerHooks.hpp"
 #include "GlobalData.hpp"
+#include "GCStatistics.hpp"
 #include "Logging.hpp"
 #include "Memory.h"
 #include "ObjectOps.hpp"
@@ -27,20 +28,17 @@ struct MarkStats {
     size_t aliveHeapSet = 0;
     // How many objects are alive in bytes. Note: this does not include overhead of malloc/mimalloc itself.
     size_t aliveHeapSetBytes = 0;
-    // How many roots are were marked.
-    size_t rootSetSize = 0;
+
 
     void merge(MarkStats other) {
         aliveHeapSet += other.aliveHeapSet;
         aliveHeapSetBytes += other.aliveHeapSetBytes;
-        rootSetSize += other.rootSetSize;
     }
 };
 
 template <typename Traits>
 MarkStats Mark(typename Traits::MarkQueue& markQueue) noexcept {
     MarkStats stats;
-    stats.rootSetSize = markQueue.size();
     auto timeStart = konan::getTimeMicros();
     while (!Traits::isEmpty(markQueue)) {
         ObjHeader* top = Traits::dequeue(markQueue);
@@ -121,10 +119,10 @@ typename Traits::ObjectFactory::FinalizerQueue Sweep(typename Traits::ObjectFact
 }
 
 template <typename Traits>
-void collectRootSetForThread(typename Traits::MarkQueue& markQueue, mm::ThreadData& thread) {
+void collectRootSetForThread(GCHandle handle, typename Traits::MarkQueue& markQueue, mm::ThreadData& thread) {
     thread.gc().OnStoppedForGC();
-    size_t stack = 0;
-    size_t tls = 0;
+    uint64_t stackRoots = 0;
+    uint64_t threadLocalRoots = 0;
     for (auto value : mm::ThreadRootSet(thread)) {
         auto* object = value.object;
         if (!isNullOrMarker(object)) {
@@ -141,22 +139,22 @@ void collectRootSetForThread(typename Traits::MarkQueue& markQueue, mm::ThreadDa
             }
             switch (value.source) {
                 case mm::ThreadRootSet::Source::kStack:
-                    ++stack;
+                    ++stackRoots;
                     break;
                 case mm::ThreadRootSet::Source::kTLS:
-                    ++tls;
+                    ++threadLocalRoots;
                     break;
             }
         }
     }
-    RuntimeLogDebug({kTagGC}, "Collected root set for thread stack=%zu tls=%zu", stack, tls);
+    handle.threadRootSet(thread.threadId(), threadLocalRoots, stackRoots);
 }
 
 template <typename Traits>
-void collectRootSetGlobals(typename Traits::MarkQueue& markQueue) noexcept {
+void collectRootSetGlobals(GCHandle gcHandle, typename Traits::MarkQueue& markQueue) noexcept {
     mm::StableRefRegistry::Instance().ProcessDeletions();
-    size_t global = 0;
-    size_t stableRef = 0;
+    uint64_t globalRoots = 0;
+    uint64_t stableRoots = 0;
     for (auto value : mm::GlobalRootSet()) {
         auto* object = value.object;
         if (!isNullOrMarker(object)) {
@@ -173,28 +171,28 @@ void collectRootSetGlobals(typename Traits::MarkQueue& markQueue) noexcept {
             }
             switch (value.source) {
                 case mm::GlobalRootSet::Source::kGlobal:
-                    ++global;
+                    ++globalRoots;
                     break;
                 case mm::GlobalRootSet::Source::kStableRef:
-                    ++stableRef;
+                    ++stableRoots;
                     break;
             }
         }
     }
-    RuntimeLogDebug({kTagGC}, "Collected global root set global=%zu stableRef=%zu", global, stableRef);
+    gcHandle.globalRootSet(globalRoots, stableRoots);
 }
 
 // TODO: This needs some tests now.
 template <typename Traits, typename F>
-void collectRootSet(typename Traits::MarkQueue& markQueue, F&& filter) noexcept {
+void collectRootSet(GCHandle handle, typename Traits::MarkQueue& markQueue, F&& filter) noexcept {
     Traits::clear(markQueue);
     for (auto& thread : mm::GlobalData::Instance().threadRegistry().LockForIter()) {
         if (!filter(thread))
             continue;
         thread.Publish();
-        collectRootSetForThread<Traits>(markQueue, thread);
+        collectRootSetForThread<Traits>(handle, markQueue, thread);
     }
-    collectRootSetGlobals<Traits>(markQueue);
+    collectRootSetGlobals<Traits>(handle, markQueue);
 }
 
 } // namespace gc

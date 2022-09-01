@@ -115,7 +115,7 @@ private:
 
 class StderrLogger : public logging::internal::Logger {
 public:
-    void Log(logging::Level level, std_support::span<const char* const> tags, std::string_view message) const noexcept override {
+    NO_EXTERNAL_CALLS_CHECK void Log(logging::Level level, std_support::span<const char* const> tags, std::string_view message) const noexcept override {
         konan::consoleErrorUtf8(message.data(), message.size());
     }
 };

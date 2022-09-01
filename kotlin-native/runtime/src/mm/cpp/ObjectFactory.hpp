@@ -672,7 +672,8 @@ public:
     // Lock ObjectFactory for safe iteration.
     Iterable LockForIter() noexcept { return Iterable(*this); }
 
-    size_t GetSizeUnsafe() const noexcept { return storage_.GetSizeUnsafe(); }
+    size_t GetObjectsCountUnsafe() const noexcept { return storage_.GetSizeUnsafe(); }
+    size_t GetTotalObjectsSizeUnsafe() const noexcept { return -1; }
 
     void ClearForTests() { storage_.ClearForTests(); }
 
