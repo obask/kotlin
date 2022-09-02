@@ -44,18 +44,20 @@ class DescriptorByIdSignatureFinderImpl(
     }
 
     override fun findDescriptorBySignature(signature: IdSignature): DeclarationDescriptor? =
+        resolveSignature(signature, canBePrivate = false)
+
+    private fun resolveSignature(signature: IdSignature, canBePrivate: Boolean): DeclarationDescriptor? =
         when (signature) {
-            is IdSignature.AccessorSignature -> findDescriptorForAccessorSignature(signature)
-            is IdSignature.CommonSignature -> findDescriptorForPublicSignature(signature)
+            is IdSignature.AccessorSignature -> resolveAccessorSignature(signature, canBePrivate)
+            is IdSignature.CommonSignature -> resolveCommonSignature(signature, canBePrivate)
             is IdSignature.CompositeSignature -> resolveCompositeSignature(signature)
-            else -> error("only PublicSignature or AccessorSignature should reach this point, got $signature")
+            else -> error("Unexpected signature kind: $signature")
         }
 
     private fun resolveCompositeSignature(signature: IdSignature.CompositeSignature): DeclarationDescriptor? {
-        val container = findDescriptorBySignature(signature.nearestPublicSig())
-        val inner = signature.inner
-        if (inner is IdSignature.LocalSignature) {
+        val container = resolveSignature(signature.nearestPublicSig(), canBePrivate = true) ?: return null
 
+        (signature.inner as? IdSignature.LocalSignature)?.let { inner ->
             fun isTypeParameterSig(fqn: String): Boolean =
                 fqn == MangleConstant.TYPE_PARAMETER_MARKER_NAME || fqn == MangleConstant.TYPE_PARAMETER_MARKER_NAME_SETTER
 
@@ -69,14 +71,17 @@ class DescriptorByIdSignatureFinderImpl(
                 }
             }
         }
+
         return container
     }
 
-    private fun findDescriptorForAccessorSignature(signature: IdSignature.AccessorSignature): DeclarationDescriptor? {
-        val propertyDescriptor = findDescriptorBySignature(signature.propertySignature) as? PropertyDescriptor
-            ?: return null
-        val shortName = signature.accessorSignature.shortName
-        return propertyDescriptor.accessors.singleOrNull { it.name.asString() == shortName }
+    private fun resolveAccessorSignature(signature: IdSignature.AccessorSignature, canBePrivate: Boolean): DeclarationDescriptor? {
+        val propertyDescriptor = resolveSignature(signature.propertySignature, canBePrivate) as? PropertyDescriptor ?: return null
+        return when (signature.accessorSignature.shortName) {
+            propertyDescriptor.getter?.name?.asString() -> propertyDescriptor.getter
+            propertyDescriptor.setter?.name?.asString() -> propertyDescriptor.setter
+            else -> null
+        }
     }
 
     private fun isConstructorName(n: Name) = n.isSpecial && n.asString() == "<init>"
@@ -115,7 +120,7 @@ class DescriptorByIdSignatureFinderImpl(
         }
     }
 
-    private fun findDescriptorForPublicSignature(signature: IdSignature.CommonSignature): DeclarationDescriptor? {
+    private fun resolveCommonSignature(signature: IdSignature.CommonSignature, canBePrivate: Boolean): DeclarationDescriptor? {
         val nameSegments = signature.nameSegments
         val toplevelDescriptors = performLookup(nameSegments, signature.packageFqName())
             .ifEmpty { return null }
@@ -151,17 +156,31 @@ class DescriptorByIdSignatureFinderImpl(
         }
         val candidates = acc
 
-        return findDescriptorByHash(candidates, signature.id)
+        return findDescriptorByHash(candidates, canBePrivate, signature.id)
     }
 
-    private fun findDescriptorByHash(candidates: Collection<DeclarationDescriptor>, id: Long?): DeclarationDescriptor? =
-        candidates.firstOrNull { candidate ->
-            if (id == null) {
-                // We don't compute id for typealiases and classes.
-                candidate is ClassDescriptor || candidate is TypeAliasDescriptor
-            } else {
-                val candidateHash = with(mangler) { candidate.signatureMangle(compatibleMode = false) }
-                candidateHash == id
-            }
+    private fun findDescriptorByHash(
+        candidates: Collection<DeclarationDescriptor>,
+        canBePrivate: Boolean,
+        id: Long?
+    ): DeclarationDescriptor? = candidates.firstOrNull { candidate ->
+        if (!canBePrivate && candidate.isPrivateApi() && !candidate.isPlatformSpecificExport()) {
+            // Partial linkage case: A declaration that was public initially became private now. Such declaration needs to be
+            // filtered out, which would have an affect as if it was not found during deserialization.
+            return@firstOrNull false
         }
+
+        if (id == null) {
+            // We don't compute id for typealiases and classes.
+            candidate is ClassDescriptor || candidate is TypeAliasDescriptor
+        } else {
+            val candidateHash = with(mangler) { candidate.signatureMangle(compatibleMode = false) }
+            candidateHash == id
+        }
+    }
+
+    private fun DeclarationDescriptor.isPrivateApi(): Boolean =
+        (this as? DeclarationDescriptorWithVisibility)?.effectiveVisibility()?.privateApi == true
+
+    private fun DeclarationDescriptor.isPlatformSpecificExport(): Boolean = with(mangler) { isPlatformSpecificExport() }
 }
