@@ -201,8 +201,6 @@ class K2JsIrCompiler : CLICompiler<K2JSCompilerArguments>() {
         val repositories: List<String> = configureLibraries(arguments.repositries)
 
         val keep: List<String> = arguments.irKeep?.split(",")
-            ?.dropLastWhile { it.isEmpty() }
-            ?.toTypedArray()
             ?.filterNot { it.isEmpty() }
             ?: emptyList()
 
