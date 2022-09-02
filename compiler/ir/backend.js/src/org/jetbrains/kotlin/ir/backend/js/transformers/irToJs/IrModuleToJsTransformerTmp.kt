@@ -229,6 +229,7 @@ class IrModuleToJsTransformerTmp(
             ExportModelToJsStatements(staticContext, { globalNames.declareFreshName(it, it) }).generateModuleExport(
                 ExportedModule(mainModuleName, moduleKind, exports),
                 internalModuleName,
+                moduleKind == ModuleKind.ES
             )
 
         result.exports.statements += exportStatements
