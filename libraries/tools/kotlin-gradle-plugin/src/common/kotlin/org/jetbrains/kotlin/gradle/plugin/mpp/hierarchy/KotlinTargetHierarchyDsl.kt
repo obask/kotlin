@@ -12,13 +12,13 @@ interface KotlinTargetHierarchyDsl {
     fun set(hierarchyDescriptor: KotlinTargetHierarchyDescriptor)
 
     /**
-     * Set's up a 'natural' hierarchy withing [KotlinTarget]'s in the project.
+     * Set's up a 'natural'/'default' hierarchy withing [KotlinTarget]'s in the project.
      *
      * #### Example 1
      *
      * ```kotlin
      * kotlin {
-     *     hierarchy.natural() // <- position of this call is not relevant!
+     *     hierarchy.default() // <- position of this call is not relevant!
      *
      *     iosX64()
      *     iosArm64()
@@ -60,7 +60,7 @@ interface KotlinTargetHierarchyDsl {
      *
      * ```kotlin
      * kotlin {
-     *     hierarchy.natural { target ->
+     *     hierarchy.default { target ->
      *         if(target.isNative) {
      *             group("native") { // <- we can re-declare already existing groups and connect children to it!
      *                 if(target.isLinux || target.isApple) {
@@ -75,7 +75,7 @@ interface KotlinTargetHierarchyDsl {
      * @param describeExtension: Additional groups can  be described to extend the 'default'/'natural' hierarchy:
      * @see KotlinTargetHierarchyDescriptor.extend
      */
-    fun natural(describeExtension: (KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit)? = null)
+    fun default(describeExtension: (KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit)? = null)
     fun custom(describe: KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit)
 }
 
@@ -84,7 +84,7 @@ internal class KotlinTargetHierarchyDslImpl(private val kotlin: KotlinMultiplatf
         kotlin.applyKotlinTargetHierarchy(hierarchyDescriptor, kotlin.targets)
     }
 
-    override fun natural(describeExtension: (KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit)?) {
+    override fun default(describeExtension: (KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit)?) {
         val hierarchyDescriptor =
             if (describeExtension != null) naturalKotlinTargetHierarchy.extend(describeExtension)
             else naturalKotlinTargetHierarchy
