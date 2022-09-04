@@ -9,7 +9,10 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 
 interface KotlinTargetHierarchyDsl {
-    fun set(hierarchyDescriptor: KotlinTargetHierarchyDescriptor)
+    fun set(
+        hierarchyDescriptor: KotlinTargetHierarchyDescriptor,
+        describeExtension: (KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit)? = null
+    )
 
     /**
      * Set's up a 'natural'/'default' hierarchy withing [KotlinTarget]'s in the project.
@@ -80,14 +83,19 @@ interface KotlinTargetHierarchyDsl {
 }
 
 internal class KotlinTargetHierarchyDslImpl(private val kotlin: KotlinMultiplatformExtension) : KotlinTargetHierarchyDsl {
-    override fun set(hierarchyDescriptor: KotlinTargetHierarchyDescriptor) {
-        kotlin.applyKotlinTargetHierarchy(hierarchyDescriptor, kotlin.targets)
+
+    override fun set(
+        hierarchyDescriptor: KotlinTargetHierarchyDescriptor,
+        describeExtension: (KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit)?
+    ) {
+        val extendedHierarchyDescriptor = if (describeExtension != null) hierarchyDescriptor.extend(describeExtension)
+        else hierarchyDescriptor
+        kotlin.applyKotlinTargetHierarchy(extendedHierarchyDescriptor, kotlin.targets)
     }
 
     override fun default(describeExtension: (KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit)?) {
-        val hierarchyDescriptor =
-            if (describeExtension != null) naturalKotlinTargetHierarchy.extend(describeExtension)
-            else naturalKotlinTargetHierarchy
+        val hierarchyDescriptor = if (describeExtension != null) naturalKotlinTargetHierarchy.extend(describeExtension)
+        else naturalKotlinTargetHierarchy
         kotlin.applyKotlinTargetHierarchy(hierarchyDescriptor, kotlin.targets)
     }
 

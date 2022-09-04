@@ -12,9 +12,6 @@ import org.jetbrains.kotlin.gradle.dsl.multiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy.KotlinTargetHierarchy
 import org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy.KotlinTargetHierarchyDescriptor
-import org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy.withHierarchy
-import org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy.withNaturalHierarchy
-import org.jetbrains.kotlin.tooling.core.withClosure
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
@@ -22,33 +19,32 @@ import kotlin.test.fail
 
 class KotlinTargetHierarchyTest {
     @Test
-    fun `test - withNaturalHierarchy - targets from all families`() {
+    fun `test - hierarchy default - targets from all families`() {
         val project = buildProjectWithMPP {
             kotlin {
-                withNaturalHierarchy {
-                    iosArm32()
-                    iosArm64()
-                    iosX64()
-                    iosSimulatorArm64()
+                hierarchy.default()
+                iosArm32()
+                iosArm64()
+                iosX64()
+                iosSimulatorArm64()
 
-                    tvosArm64()
-                    tvosX64()
+                tvosArm64()
+                tvosX64()
 
-                    watchosArm32()
-                    watchosArm64()
+                watchosArm32()
+                watchosArm64()
 
-                    macosX64()
-                    macosArm64()
+                macosX64()
+                macosArm64()
 
-                    linuxX64()
-                    linuxArm32Hfp()
+                linuxX64()
+                linuxArm32Hfp()
 
-                    mingwX64()
-                    mingwX86()
+                mingwX64()
+                mingwX86()
 
-                    androidNativeArm32()
-                    androidNativeArm64()
-                }
+                androidNativeArm32()
+                androidNativeArm64()
             }
         }
 
@@ -161,12 +157,11 @@ class KotlinTargetHierarchyTest {
     }
 
     @Test
-    fun `test - withNaturalHierarchy - only linuxX64`() {
+    fun `test - hierarchy default - only linuxX64`() {
         val project = buildProjectWithMPP {
             kotlin {
-                withNaturalHierarchy {
-                    linuxX64()
-                }
+                hierarchy.default()
+                linuxX64()
             }
         }
 
@@ -308,14 +303,12 @@ class KotlinTargetHierarchyTest {
     }
 
     @Test
-    fun `test - withHierarchy - extend`() {
+    fun `test - hierarchy set - extend`() {
         val descriptor = KotlinTargetHierarchyDescriptor { group("common") { group("base") } }
         val project = buildProjectWithMPP {
             kotlin {
-                withHierarchy(descriptor) {
-                    extendHierarchy { group("base") { group("extension") } }
-                    linuxX64()
-                }
+                hierarchy.set(descriptor) { group("base") { group("extension") } }
+                linuxX64()
             }
         }
 
@@ -340,7 +333,7 @@ class KotlinTargetHierarchyTest {
 
 
     @Test
-    fun `test - withHierarchy - extend - with new root`() {
+    fun `test - hierarchy set - extend - with new root`() {
         val descriptor = KotlinTargetHierarchyDescriptor {
             group("common") {
                 group("base")
@@ -349,10 +342,12 @@ class KotlinTargetHierarchyTest {
 
         val project = buildProjectWithMPP {
             kotlin {
-                withHierarchy(descriptor) {
-                    extendHierarchy { group("newRoot") { group("base") { group("extension") } } }
-                    linuxX64()
+                hierarchy.set(descriptor) {
+                    group("newRoot") {
+                        group("base") { group("extension") }
+                    }
                 }
+                linuxX64()
             }
         }
 
