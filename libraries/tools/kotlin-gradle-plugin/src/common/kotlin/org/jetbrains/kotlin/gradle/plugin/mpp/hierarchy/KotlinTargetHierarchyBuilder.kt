@@ -47,10 +47,10 @@ internal class KotlinTargetHierarchyBuilderImpl(
 
     override val target: KotlinTarget = compilation.target
 
-    private val groups = mutableMapOf<String, KotlinTargetHierarchyBuilderImpl>()
+    private val declaredChildrenGroups = mutableMapOf<String, KotlinTargetHierarchyBuilderImpl>()
 
     override fun group(name: String, build: KotlinTargetHierarchyBuilder.() -> Unit) {
-        groups.getOrPut(name) {
+        declaredChildrenGroups.getOrPut(name) {
             allGroups.getOrPut(name) { KotlinTargetHierarchyBuilderImpl(compilation, allGroups) }
         }.also(build)
     }
@@ -60,7 +60,7 @@ internal class KotlinTargetHierarchyBuilderImpl(
     }
 
     private fun build(cache: MutableMap<String /* name */, KotlinTargetHierarchy>): KotlinTargetHierarchies {
-        val roots = groups.map { (name, builder) ->
+        val roots = declaredChildrenGroups.map { (name, builder) ->
             cache.getOrPut(name) { KotlinTargetHierarchy(name, builder.build(cache)) }
         }.toSet()
 
