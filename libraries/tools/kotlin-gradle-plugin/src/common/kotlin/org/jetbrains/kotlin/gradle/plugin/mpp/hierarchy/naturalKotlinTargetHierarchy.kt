@@ -8,27 +8,27 @@ package org.jetbrains.kotlin.gradle.plugin.mpp.hierarchy
 import org.jetbrains.kotlin.gradle.plugin.mpp.isMain
 import org.jetbrains.kotlin.gradle.plugin.mpp.isTest
 
-internal val naturalKotlinTargetHierarchy = KotlinTargetHierarchyDescriptor hierarchy@{ target ->
+internal val naturalKotlinTargetHierarchy = KotlinTargetHierarchyDescriptor {
     if (!compilation.isMain() && !compilation.isTest()) {
         /* This hierarchy is only defined for default 'main' and 'test' compilations */
-        return@hierarchy
+        return@KotlinTargetHierarchyDescriptor
     }
 
     group("common") {
-        if (target.isNative) {
+        if (isNative) {
             group("native") {
-                if (target.isApple) {
+                if (isApple) {
                     group("apple") {
-                        if (target.isIos) group("ios")
-                        if (target.isTvos) group("tvos")
-                        if (target.isWatchos) group("watchos")
-                        if (target.isMacos) group("macos")
+                        if (isIos) group("ios")
+                        if (isTvos) group("tvos")
+                        if (isWatchos) group("watchos")
+                        if (isMacos) group("macos")
                     }
                 }
 
-                if (target.isLinux) group("linux")
-                if (target.isWindows) group("windows")
-                if (target.isAndroidNative) group("androidNative")
+                if (isLinux) group("linux")
+                if (isWindows) group("windows")
+                if (isAndroidNative) group("androidNative")
             }
         }
     }

@@ -18,24 +18,24 @@ import org.jetbrains.kotlin.tooling.core.closure
 
 @ExperimentalKotlinGradlePluginApi
 interface KotlinTargetHierarchyBuilder {
+    val target: KotlinTarget
     val compilation: KotlinCompilation<*>
     fun group(name: String, build: KotlinTargetHierarchyBuilder.() -> Unit = {})
 
-    val KotlinTarget.isNative: Boolean get() = this is KotlinNativeTarget
-    val KotlinTarget.isApple: Boolean get() = this is KotlinNativeTarget && this.konanTarget.family.isAppleFamily
+    val isNative: Boolean get() = target is KotlinNativeTarget
+    val isApple: Boolean get() = target.let { it is KotlinNativeTarget && it.konanTarget.family.isAppleFamily }
+    val isIos: Boolean get() = target.let { it is KotlinNativeTarget && it.konanTarget.family == Family.IOS }
+    val isWatchos: Boolean get() = target.let { it is KotlinNativeTarget && it.konanTarget.family == Family.WATCHOS }
+    val isMacos: Boolean get() = target.let { it is KotlinNativeTarget && it.konanTarget.family == Family.OSX }
+    val isTvos: Boolean get() = target.let { it is KotlinNativeTarget && it.konanTarget.family == Family.TVOS }
+    val isWindows: Boolean get() = target.let { it is KotlinNativeTarget && it.konanTarget.family == Family.MINGW }
+    val isLinux: Boolean get() = target.let { it is KotlinNativeTarget && it.konanTarget.family == Family.LINUX }
+    val isAndroidNative: Boolean get() = target.let { it is KotlinNativeTarget && it.konanTarget.family == Family.ANDROID }
 
-    val KotlinTarget.isIos: Boolean get() = this is KotlinNativeTarget && this.konanTarget.family == Family.IOS
-    val KotlinTarget.isWatchos: Boolean get() = this is KotlinNativeTarget && this.konanTarget.family == Family.WATCHOS
-    val KotlinTarget.isMacos: Boolean get() = this is KotlinNativeTarget && this.konanTarget.family == Family.OSX
-    val KotlinTarget.isTvos: Boolean get() = this is KotlinNativeTarget && this.konanTarget.family == Family.TVOS
-    val KotlinTarget.isWindows: Boolean get() = this is KotlinNativeTarget && this.konanTarget.family == Family.MINGW
-    val KotlinTarget.isLinux: Boolean get() = this is KotlinNativeTarget && this.konanTarget.family == Family.LINUX
-    val KotlinTarget.isAndroidNative: Boolean get() = this is KotlinNativeTarget && this.konanTarget.family == Family.ANDROID
-
-    val KotlinTarget.isJvm: Boolean get() = this is KotlinJvmTarget
-    val KotlinTarget.isAndroidJvm: Boolean get() = this is KotlinAndroidTarget
-    val KotlinTarget.isJsLegacy: Boolean get() = this is KotlinJsTarget
-    val KotlinTarget.isJs: Boolean get() = this is KotlinJsIrTarget
+    val isJvm: Boolean get() = target is KotlinJvmTarget
+    val isAndroidJvm: Boolean get() = target is KotlinAndroidTarget
+    val isJsLegacy: Boolean get() = target is KotlinJsTarget
+    val isJs: Boolean get() = target is KotlinJsIrTarget
 }
 
 private typealias KotlinTargetHierarchies = Set<KotlinTargetHierarchy>
@@ -44,6 +44,8 @@ internal class KotlinTargetHierarchyBuilderImpl(
     override val compilation: KotlinCompilation<*>,
     private val allGroups: MutableMap<String, KotlinTargetHierarchyBuilderImpl> = mutableMapOf(),
 ) : KotlinTargetHierarchyBuilder {
+
+    override val target: KotlinTarget = compilation.target
 
     private val groups = mutableMapOf<String, KotlinTargetHierarchyBuilderImpl>()
 
