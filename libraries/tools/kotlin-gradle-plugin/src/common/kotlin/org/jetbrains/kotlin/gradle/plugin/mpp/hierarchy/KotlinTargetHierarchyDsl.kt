@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 
 interface KotlinTargetHierarchyDsl {
-    fun set(
+    fun apply(
         hierarchyDescriptor: KotlinTargetHierarchyDescriptor,
         describeExtension: (KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit)? = null
     )
@@ -84,7 +84,7 @@ interface KotlinTargetHierarchyDsl {
 
 internal class KotlinTargetHierarchyDslImpl(private val kotlin: KotlinMultiplatformExtension) : KotlinTargetHierarchyDsl {
 
-    override fun set(
+    override fun apply(
         hierarchyDescriptor: KotlinTargetHierarchyDescriptor,
         describeExtension: (KotlinTargetHierarchyBuilder.(target: KotlinTarget) -> Unit)?
     ) {

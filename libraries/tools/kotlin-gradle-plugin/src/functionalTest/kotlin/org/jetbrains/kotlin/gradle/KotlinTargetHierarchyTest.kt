@@ -307,7 +307,7 @@ class KotlinTargetHierarchyTest {
         val descriptor = KotlinTargetHierarchyDescriptor { group("common") { group("base") } }
         val project = buildProjectWithMPP {
             kotlin {
-                hierarchy.set(descriptor) { group("base") { group("extension") } }
+                hierarchy.apply(descriptor) { group("base") { group("extension") } }
                 linuxX64()
             }
         }
@@ -342,7 +342,7 @@ class KotlinTargetHierarchyTest {
 
         val project = buildProjectWithMPP {
             kotlin {
-                hierarchy.set(descriptor) {
+                hierarchy.apply(descriptor) {
                     group("newRoot") {
                         group("base") { group("extension") }
                     }
