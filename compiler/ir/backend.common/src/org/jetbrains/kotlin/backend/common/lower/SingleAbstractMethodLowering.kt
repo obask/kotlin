@@ -70,6 +70,8 @@ abstract class SingleAbstractMethodLowering(val context: CommonBackendContext) :
         setSourceRange(createFor)
     }
 
+    protected open fun getSingleAbstractMethod(clazz: IrClass) = clazz.functions.single { it.modality == Modality.ABSTRACT }
+
     abstract val IrType.needEqualsHashCodeMethods: Boolean
 
     open val inInlineFunctionScope get() = allScopes.any { scope -> (scope.irElement as? IrFunction)?.isInline ?: false }
@@ -156,7 +158,7 @@ abstract class SingleAbstractMethodLowering(val context: CommonBackendContext) :
         val superFqName = superClass.fqNameWhenAvailable!!.asString().replace('.', '_')
         val inlinePrefix = if (wrapperVisibility == DescriptorVisibilities.PUBLIC) "\$i" else ""
         val wrapperName = Name.identifier("sam$inlinePrefix\$$superFqName$SAM_WRAPPER_SUFFIX")
-        val superMethod = superClass.functions.single { it.modality == Modality.ABSTRACT }
+        val superMethod = getSingleAbstractMethod(superClass)
         val extensionReceiversCount = if (superMethod.extensionReceiverParameter == null) 0 else 1
         // TODO: have psi2ir cast the argument to the correct function type. Also see the TODO
         //       about type parameters in `visitTypeOperator`.

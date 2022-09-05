@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.common.lower.SingleAbstractMethodLowering
 import org.jetbrains.kotlin.backend.konan.Context
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrTypeOperatorCall
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -24,4 +25,8 @@ internal class NativeSingleAbstractMethodLowering(context: Context) : SingleAbst
     }
 
     override val IrType.needEqualsHashCodeMethods get() = true
+
+    override fun getSingleAbstractMethod(clazz: IrClass) = super.getSingleAbstractMethod(clazz).let {
+        context.mapping.functionWithContinuationsToSuspendFunctions[it] ?: it
+    }
 }
