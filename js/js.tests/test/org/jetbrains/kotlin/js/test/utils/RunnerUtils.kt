@@ -14,7 +14,6 @@ import org.jetbrains.kotlin.js.test.converters.extension
 import org.jetbrains.kotlin.js.test.converters.kind
 import org.jetbrains.kotlin.js.test.handlers.JsBoxRunner.Companion.TEST_FUNCTION
 import org.jetbrains.kotlin.js.testOld.*
-import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.serialization.js.ModuleKind
 import org.jetbrains.kotlin.test.TargetBackend
@@ -32,8 +31,12 @@ import java.io.File
 
 private const val MODULE_EMULATION_FILE = "${JsEnvironmentConfigurator.TEST_DATA_DIR_PATH}/moduleEmulation.js"
 
+fun TestModule.getNameFor(filePath: String, testServices: TestServices): String {
+    return JsEnvironmentConfigurator.getJsArtifactSimpleName(testServices, name) + "-js-" + filePath
+}
+
 fun TestModule.getNameFor(file: TestFile, testServices: TestServices): String {
-    return JsEnvironmentConfigurator.getJsArtifactSimpleName(testServices, name) + "-js-" + file.name
+    return getNameFor(file.name, testServices)
 }
 
 private fun extractJsFiles(testServices: TestServices, modules: List<TestModule>): Pair<List<String>, List<String>> {
@@ -60,36 +63,54 @@ private fun extractJsFiles(testServices: TestServices, modules: List<TestModule>
     return before to after
 }
 
-private fun getAdditionalFiles(testServices: TestServices): List<String> {
+fun getAdditionalFilePathes(testServices: TestServices): List<String> {
+   return getAdditionalFiles(testServices, true).map { it.absolutePath }
+}
+
+fun getAdditionalFiles(testServices: TestServices, shouldCopyFiles: Boolean = false): List<File> {
     val originalFile = testServices.moduleStructure.originalTestDataFiles.first()
 
     val withModuleSystem = testWithModuleSystem(testServices)
 
-    val additionalFiles = mutableListOf<String>()
-    if (withModuleSystem) additionalFiles += File(MODULE_EMULATION_FILE).absolutePath
+    val additionalFiles = mutableListOf<File>()
+    if (withModuleSystem) additionalFiles += File(MODULE_EMULATION_FILE)
 
     originalFile.parentFile.resolve(originalFile.nameWithoutExtension + JavaScript.DOT_EXTENSION)
         .takeIf { it.exists() }
-        ?.let { additionalFiles += it.absolutePath }
+        ?.let { additionalFiles += it }
+
+    originalFile.parentFile.resolve(originalFile.nameWithoutExtension + JavaScript.DOT_MODULE_EXTENSION)
+        .takeIf { it.exists() }
+        ?.let {
+            File(JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices), it.name).apply {
+                if (shouldCopyFiles) it.copyTo(this, true)
+            }
+        }
+        ?.let { additionalFiles += it }
 
     return additionalFiles
 }
 
-private fun getAdditionalMjsFiles(testServices: TestServices): List<String> {
-    val originalFile = testServices.moduleStructure.originalTestDataFiles.first()
-
-    return originalFile.parentFile.resolve(originalFile.nameWithoutExtension + ".mjs")
-        .takeIf { it.exists() }
-        ?.let { listOf(it.absolutePath) } ?: emptyList()
+fun getAdditionalMainFilePathes(testServices: TestServices): List<String> {
+    return getAdditionalMainFiles(testServices, shouldCopyFiles = true).map { it.absolutePath }
 }
 
-private fun getAdditionalMainFiles(testServices: TestServices): List<String> {
+fun getAdditionalMainFiles(testServices: TestServices, shouldCopyFiles: Boolean = false): List<File> {
     val originalFile = testServices.moduleStructure.originalTestDataFiles.first()
-    val additionalFiles = mutableListOf<String>()
+    val additionalFiles = mutableListOf<File>()
 
     originalFile.parentFile.resolve(originalFile.nameWithoutExtension + "__main.js")
         .takeIf { it.exists() }
-        ?.let { additionalFiles += it.absolutePath }
+        ?.let { additionalFiles += it }
+
+    originalFile.parentFile.resolve(originalFile.nameWithoutExtension + "__main.mjs")
+        .takeIf { it.exists() }
+        ?.let {
+            File(JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices), it.name).apply {
+                if (shouldCopyFiles) it.copyTo(this, true)
+            }
+        }
+        ?.let { additionalFiles += it }
 
     return additionalFiles
 }
@@ -108,8 +129,8 @@ fun getAllFilesForRunner(
 
     val commonFiles = JsAdditionalSourceProvider.getAdditionalJsFiles(originalFile.parent).map { it.absolutePath }
     val (inputJsFilesBefore, inputJsFilesAfter) = extractJsFiles(testServices, testServices.moduleStructure.modules)
-    val additionalFiles = getAdditionalFiles(testServices)
-    val additionalMainFiles = getAdditionalMainFiles(testServices)
+    val additionalFiles = getAdditionalFilePathes(testServices)
+    val additionalMainFiles = getAdditionalMainFilePathes(testServices)
 
     if (modulesToArtifact.values.any { it is BinaryArtifacts.Js.JsIrArtifact }) {
         // JS IR
@@ -131,7 +152,7 @@ fun getAllFilesForRunner(
 
         return result
     } else {
-        // Old BE and ES modules
+        // Old BE
         val outputDir = JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices)
         val dceOutputDir = JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices, TranslationMode.FULL_DCE_MINIMIZED_NAMES)
 
@@ -150,38 +171,6 @@ fun getAllFilesForRunner(
 
         return result
     }
-}
-
-fun extractAllFilesForEsRunner(testServices: TestServices, esmOutputDir: File): Pair<List<String>, List<String>> {
-    val modules = testServices.moduleStructure.modules
-    val originalFile = testServices.moduleStructure.originalTestDataFiles.first()
-
-    val commonFiles = JsAdditionalSourceProvider.getAdditionalJsFiles(originalFile.parent).map { it.absolutePath }
-    val (inputJsFilesBefore, inputJsFilesAfter) = extractJsFiles(testServices, modules)
-    val additionalFiles = getAdditionalFiles(testServices)
-    val additionalMjsFiles = getAdditionalMjsFiles(testServices)
-    val additionalMainFiles = getAdditionalMainFiles(testServices)
-
-    val allNonEsModuleFiles = additionalFiles + inputJsFilesBefore + commonFiles
-
-    // Copy __main file if present
-    if (additionalMainFiles.isNotEmpty()) {
-        val newFileName = File(esmOutputDir, "test.mjs")
-        newFileName.delete()
-        File(additionalMainFiles.first()).copyTo(newFileName)
-    }
-
-    // Copy all .mjs files into generated directory
-    modules.flatMap { it.files }
-        .filter { it.isMjsFile }
-        .map { File(esmOutputDir, it.name).writeText(it.originalContent) }
-
-    additionalMjsFiles.forEach { mjsFile ->
-        val outFile = File(esmOutputDir, File(mjsFile).name)
-        File(mjsFile).copyTo(outFile, overwrite = true)
-    }
-
-    return Pair(allNonEsModuleFiles, inputJsFilesAfter)
 }
 
 fun getOnlyJsFilesForRunner(testServices: TestServices, modulesToArtifact: Map<TestModule, BinaryArtifacts.Js>): List<String> {
@@ -213,12 +202,39 @@ fun getBoxFunction(testServices: TestServices): KtNamedFunction? {
     }.singleOrNull()
 }
 
-fun extractTestPackage(testServices: TestServices): String? =
-    getBoxFunction(testServices)?.containingKtFile?.packageFqName?.asString()?.takeIf { it.isNotEmpty() }
+fun extractTestPackage(testServices: TestServices, ignoreEsModules: Boolean = true): String? {
+    val runPlainBoxFunction = RUN_PLAIN_BOX_FUNCTION in testServices.moduleStructure.allDirectives
+    if (runPlainBoxFunction) return null
+
+    val ktFiles = testServices.moduleStructure.modules.flatMap { module ->
+        module.files
+            .filter { it.isKtFile }
+            .map {
+                val project = testServices.compilerConfigurationProvider.getProject(module)
+                module to testServices.sourceFileProvider.getKtFileForSourceFile(it, project)
+            }
+    }
+
+    val fileWithBoxFunction = ktFiles.find { (module, ktFile) ->
+        (!ignoreEsModules || module.kind != ModuleKind.ES) &&
+        ktFile.declarations.find { it is KtNamedFunction && it.name == TEST_FUNCTION } != null
+    } ?: return null
+
+    return fileWithBoxFunction.second.packageFqName.asString().takeIf { it.isNotEmpty() }
+}
 
 fun extractEntryModulePath(testServices: TestServices, modulesToArtifact: Map<TestModule, BinaryArtifacts.Js>): String? =
     if (getBoxFunction(testServices) == null) {
-        null
+        testServices.moduleStructure.modules
+            .find { JsEnvironmentConfigurator.isMainModule(it, testServices) }
+            ?.run {
+                files
+                    .find { JsEnvironmentConfigurationDirectives.ENTRY_ES_MODULE in it.directives }
+                    ?.let {
+                        File(JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices), getNameFor(it, testServices)).absolutePath
+                    }
+            }
+
     } else {
         testServices.moduleStructure.modules
             .find { JsEnvironmentConfigurator.isMainModule(it, testServices) }

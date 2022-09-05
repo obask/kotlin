@@ -94,6 +94,7 @@ class IrModuleToJsTransformerTmp(
 
     private val mainModuleName = backendContext.configuration[CommonConfigurationKeys.MODULE_NAME]!!
     private val moduleKind = backendContext.configuration[JSConfigurationKeys.MODULE_KIND]!!
+    private val isEsModules = moduleKind == ModuleKind.ES
     private val sourceMapInfo = SourceMapsInfo.from(backendContext.configuration)
 
     private class IrAndExportedDeclarations(val fragment: IrModuleFragment, val files: List<Pair<IrFile, List<ExportedDeclaration>>>)
@@ -103,7 +104,7 @@ class IrModuleToJsTransformerTmp(
     }
 
     private fun associateIrAndExport(modules: Iterable<IrModuleFragment>): List<IrAndExportedDeclarations> {
-        val exportModelGenerator = ExportModelGenerator(backendContext, generateNamespacesForPackages = true)
+        val exportModelGenerator = ExportModelGenerator(backendContext, generateNamespacesForPackages = !isEsModules)
 
         return modules.map { module ->
             val files = module.files.map { file ->
@@ -154,7 +155,7 @@ class IrModuleToJsTransformerTmp(
     }
 
     fun generateBinaryAst(files: Collection<IrFile>, allModules: Collection<IrModuleFragment>): List<JsIrFragmentAndBinaryAst> {
-        val exportModelGenerator = ExportModelGenerator(backendContext, generateNamespacesForPackages = true)
+        val exportModelGenerator = ExportModelGenerator(backendContext, generateNamespacesForPackages = !isEsModules)
 
         val exportData = files.map { it to exportModelGenerator.generateExportWithExternals(it) }
 
@@ -223,13 +224,13 @@ class IrModuleToJsTransformerTmp(
             polyfills.statements += backendContext.polyfills.getAllPolyfillsFor(file)
         }
 
-        val internalModuleName = ReservedJsNames.makeInternalModuleName()
+        val internalModuleName = ReservedJsNames.makeInternalModuleName().takeIf { !isEsModules }
         val globalNames = NameTable<String>(globalNameScope)
         val exportStatements =
             ExportModelToJsStatements(staticContext, { globalNames.declareFreshName(it, it) }).generateModuleExport(
                 ExportedModule(mainModuleName, moduleKind, exports),
                 internalModuleName,
-                moduleKind == ModuleKind.ES
+                isEsModules
             )
 
         result.exports.statements += exportStatements

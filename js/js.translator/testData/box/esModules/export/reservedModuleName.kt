@@ -12,6 +12,8 @@ public fun foo(k: String): String = "O$k"
 
 // FILE: entry.mjs
 // ENTRY_ES_MODULE
-import { foo } from "./if/index.js";
+import { foo } from "./reservedModuleName-if_v5.mjs";
 
-console.assert(foo("K") == "OK");
+export function box() {
+    return foo("K")
+}

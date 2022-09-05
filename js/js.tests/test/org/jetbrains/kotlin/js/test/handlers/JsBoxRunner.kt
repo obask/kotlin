@@ -40,28 +40,6 @@ class JsBoxRunner(testServices: TestServices) : AbstractJsArtifactsCollector(tes
         }
     }
 
-//    private fun runEsCode() {
-//        val globalDirectives = testServices.moduleStructure.allDirectives
-//
-//        val esmOutputDir = JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices).esModulesSubDir
-//        val esmDceOutputDir = JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices, TranslationMode.FULL_DCE_MINIMIZED_NAMES).esModulesSubDir
-//
-//        val dontSkipRegularMode = JsEnvironmentConfigurationDirectives.SKIP_REGULAR_MODE !in globalDirectives
-//        val runIrDce = JsEnvironmentConfigurationDirectives.RUN_IR_DCE in globalDirectives
-//        if (dontSkipRegularMode) {
-//            singleRunEsCode(esmOutputDir)
-//            if (runIrDce) {
-//                singleRunEsCode(esmDceOutputDir)
-//            }
-//        }
-//    }
-//
-//    private fun singleRunEsCode(esmOutputDir: File) {
-//        val perFileEsModuleFile = "$esmOutputDir/test.mjs"
-//        val (allNonEsModuleFiles, inputJsFilesAfter) = extractAllFilesForEsRunner(testServices, esmOutputDir)
-//        v8tool.run(*allNonEsModuleFiles.toTypedArray(), perFileEsModuleFile, *inputJsFilesAfter.toTypedArray())
-//    }
-
     private fun runGeneratedCode(
         entryModulePath: String?,
         jsFiles: List<String>,

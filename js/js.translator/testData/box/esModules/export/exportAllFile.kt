@@ -19,5 +19,9 @@ class B : A() {
 
 // FILE: entry.mjs
 // ENTRY_ES_MODULE
-import { B } from "./export_all_file/index.js";
-console.assert(new B().foo("K") == "OK");
+
+import { B } from "./exportAllFile-export_all_file_v5.mjs";
+
+export function box() {
+    return new B().foo("K")
+}

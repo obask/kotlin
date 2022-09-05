@@ -7,11 +7,13 @@ package org.jetbrains.kotlin.js.test.converters
 
 import org.jetbrains.kotlin.backend.common.DeclarationTransformer
 import org.jetbrains.kotlin.ir.backend.js.utils.JsAnnotations
+import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
 import org.jetbrains.kotlin.ir.util.getAnnotation
-import org.jetbrains.kotlin.js.test.utils.getNameFor
+import org.jetbrains.kotlin.js.test.utils.*
 import org.jetbrains.kotlin.test.services.TestServices
 import org.jetbrains.kotlin.test.services.isJsFile
 import org.jetbrains.kotlin.test.services.isMjsFile
@@ -20,15 +22,24 @@ import org.jetbrains.kotlin.test.services.moduleStructure
 class JsIrPathReplacer(testServices: TestServices) : DeclarationTransformer {
     private val replacements = testServices.collectReplacementsMap()
 
+    override fun lower(irFile: IrFile) {
+        super.lower(irFile)
+        irFile.replaceJsModulePath()
+    }
+
     override fun transformFlat(declaration: IrDeclaration): List<IrDeclaration>? {
-        val jsModuleAnnotation = declaration.getAnnotation(JsAnnotations.jsModuleFqn) ?: return null
+        return null.also {
+            declaration.replaceJsModulePath()
+        }
+    }
+
+    private fun IrAnnotationContainer.replaceJsModulePath() {
+        val jsModuleAnnotation = getAnnotation(JsAnnotations.jsModuleFqn) ?: return
         @Suppress("UNCHECKED_CAST")
         val stringLiteral = jsModuleAnnotation.getValueArgument(0) as IrConst<String>
-        val pathReplacement = stringLiteral.getReplacement() ?: return null
+        val pathReplacement = stringLiteral.getReplacement() ?: return
 
-        return listOf(declaration).also {
-            jsModuleAnnotation.putValueArgument(0, pathReplacement)
-        }
+        jsModuleAnnotation.putValueArgument(0, pathReplacement)
     }
 
     private fun IrConst<String>.getReplacement(): IrConst<String>? {
@@ -41,6 +52,8 @@ class JsIrPathReplacer(testServices: TestServices) : DeclarationTransformer {
             .map { module -> module to module.files.filter { it.isJsFile || it.isMjsFile } }
             .filter { (_, files) -> files.isNotEmpty() }
             .flatMap { (module, files) ->  files.map { it.relativePath to module.getNameFor(it, this) } }
+            .plus(getAdditionalFiles(this).map { it.name to it.absolutePath })
+            .plus(getAdditionalMainFiles(this).map { it.name to it.absolutePath })
             .toMap()
     }
 }

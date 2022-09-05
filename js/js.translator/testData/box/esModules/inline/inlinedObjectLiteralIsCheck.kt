@@ -1,4 +1,3 @@
-// DONT_TARGET_EXACT_BACKEND: JS
 // ES_MODULES
 
 // FILE: main.kt
@@ -30,6 +29,8 @@ fun testOk(ok: Any): String {
 
 // FILE: entry.mjs
 // ENTRY_ES_MODULE
-import { convolutedOk, testOk } from "./main/index.js";
+import { convolutedOk, testOk } from "./inlinedObjectLiteralIsCheck_v5.mjs";
 
-console.assert(testOk(convolutedOk()) == "OK");
+export function box() {
+    return testOk(convolutedOk())
+}

@@ -32,10 +32,9 @@ Foo.prototype.k = function() {
 
 // FILE: entry.mjs
 // ENTRY_ES_MODULE
-import { Baz } from "./overriden_external_method_with_same_name_method/index.js";
+import { Baz } from "./overriddenExternalMethodWithSameNameMethod-overriden_external_method_with_same_name_method_v5.mjs";
 
-function test(foo) {
+export function box() {
+    const foo = new Baz()
     return foo.o() + foo.k()
 }
-
-console.assert(test(new Baz())  == "OK");

@@ -21,7 +21,7 @@ class JsImportedModule @JvmOverloads constructor(
     val externalName: String,
     var internalName: JsName,
     val plainReference: JsExpression?,
-    val relativeRequirePath: Boolean = false
+    val relativeRequirePath: Boolean = false,
 ) {
     val key = JsImportedModuleKey(externalName, plainReference?.toString())
 }

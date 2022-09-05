@@ -102,7 +102,14 @@ object ModuleWrapperTranslation {
 
     private fun wrapEsModule(function: JsFunction, importedModules: List<JsImportedModule>): List<JsStatement> {
         val importStatements = importedModules.zip(function.parameters.drop(1)).map {
-            JsImport(it.first.externalName, JsImport.Target.Default(it.second.name))
+            JsImport(
+                it.first.externalName,
+                if (it.first.plainReference == null) {
+                    JsImport.Target.All(alias = it.second.name)
+                } else {
+                    JsImport.Target.Default(name = it.second.name)
+                }
+            )
         }
        return importStatements + function.body.statements.dropLast(1)
     }

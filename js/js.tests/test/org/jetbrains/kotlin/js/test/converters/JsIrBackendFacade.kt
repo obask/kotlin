@@ -85,7 +85,7 @@ class JsIrBackendFacade(
             else -> JsGenerationGranularity.WHOLE_PROGRAM
         }
 
-        val testPackage = extractTestPackage(testServices)
+        val testPackage = extractTestPackage(testServices, ignoreEsModules = false)
         val skipRegularMode = JsEnvironmentConfigurationDirectives.SKIP_REGULAR_MODE in module.directives
 
         if (skipRegularMode) return null
