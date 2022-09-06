@@ -11,8 +11,8 @@ import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.kotlin.dsl.getByType
 import org.jetbrains.kotlin.bitcode.CompileToBitcodeExtension
-import org.jetbrains.kotlin.bitcode.CompileToBitcodePlugin
 import org.jetbrains.kotlin.resolve
 import java.io.File
 import java.net.URL
@@ -51,32 +51,32 @@ open class RuntimeTestingPlugin : Plugin<Project> {
             dependencies: Iterable<TaskProvider<*>>
     ) {
         pluginManager.withPlugin("compile-to-bitcode") {
-            val bitcodeExtension =
-                    project.extensions.getByName(CompileToBitcodePlugin.EXTENSION_NAME) as CompileToBitcodeExtension
+            val bitcodeExtension = project.extensions.getByType<CompileToBitcodeExtension>()
+            bitcodeExtension.allTargets {
+                module("googletest", outputGroup = "test") {
+                    inputFiles.from(googleTestRoot.resolve("googletest/src"))
+                    inputFiles.include("*.cc")
+                    inputFiles.exclude("gtest-all.cc", "gtest_main.cc")
+                    headersDirs.from(
+                            googleTestRoot.resolve("googletest/include"),
+                            googleTestRoot.resolve("googletest")
+                    )
+                    compilerArgs.set(listOf("-std=c++17", "-O2"))
+                    dependsOn(dependencies)
+                }
 
-            bitcodeExtension.module("googletest", outputGroup = "test") {
-                inputFiles.from(googleTestRoot.resolve("googletest/src"))
-                inputFiles.include("*.cc")
-                inputFiles.exclude("gtest-all.cc", "gtest_main.cc")
-                headersDirs.from(
-                        googleTestRoot.resolve("googletest/include"),
-                        googleTestRoot.resolve("googletest")
-                )
-                compilerArgs.set(listOf("-std=c++17", "-O2"))
-                dependsOn(dependencies)
-            }
-
-            bitcodeExtension.module("googlemock", outputGroup = "test") {
-                inputFiles.from(googleTestRoot.resolve("googlemock/src"))
-                inputFiles.include("*.cc")
-                inputFiles.exclude("gmock-all.cc", "gmock_main.cc")
-                headersDirs.from(
-                        googleTestRoot.resolve("googlemock"),
-                        googleTestRoot.resolve("googlemock/include"),
-                        googleTestRoot.resolve("googletest/include"),
-                )
-                compilerArgs.set(listOf("-std=c++17", "-O2"))
-                dependsOn(dependencies)
+                module("googlemock", outputGroup = "test") {
+                    inputFiles.from(googleTestRoot.resolve("googlemock/src"))
+                    inputFiles.include("*.cc")
+                    inputFiles.exclude("gmock-all.cc", "gmock_main.cc")
+                    headersDirs.from(
+                            googleTestRoot.resolve("googlemock"),
+                            googleTestRoot.resolve("googlemock/include"),
+                            googleTestRoot.resolve("googletest/include"),
+                    )
+                    compilerArgs.set(listOf("-std=c++17", "-O2"))
+                    dependsOn(dependencies)
+                }
             }
         }
     }

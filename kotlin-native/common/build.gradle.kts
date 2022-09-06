@@ -8,11 +8,13 @@ plugins {
 }
 
 bitcode {
-    module("files") {
-        headersDirs.from(layout.projectDirectory.dir("src/files/headers"))
-    }
-    module("env") {
-        headersDirs.from(layout.projectDirectory.dir("src/env/headers"))
+    allTargets {
+        module("files") {
+            headersDirs.from(layout.projectDirectory.dir("src/files/headers"))
+        }
+        module("env") {
+            headersDirs.from(layout.projectDirectory.dir("src/env/headers"))
+        }
     }
 }
 
