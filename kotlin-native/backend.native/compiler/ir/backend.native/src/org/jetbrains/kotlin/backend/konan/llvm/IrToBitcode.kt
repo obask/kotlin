@@ -221,9 +221,6 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
         override fun calculateLifetime(element: IrElement): Lifetime =
                 resultLifetime(element)
 
-        override val continuation: LLVMValueRef
-            get() = getContinuation()
-
         override val exceptionHandler: ExceptionHandler
             get() = currentCodeContext.exceptionHandler
 
@@ -2238,13 +2235,15 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
     private fun IrFunction.scope(startLine:Int): DIScopeOpaqueRef? {
         if (!context.shouldContainLocationDebugInfo())
             return null
-        val functionLlvmValue =
-                // TODO: May be tie up inline lambdas to their outer function?
-                if (codegen.isExternal(this) && !KonanBinaryInterface.isExported(this))
-                    null
-                else
-                    codegen.llvmFunctionOrNull(this)?.llvmValue
-        return if (!isReifiedInline && functionLlvmValue != null) {
+
+        val functionLlvmValue = when {
+            isReifiedInline -> null
+            // TODO: May be tie up inline lambdas to their outer function?
+            codegen.isExternal(this) && !KonanBinaryInterface.isExported(this) -> null
+            this is IrSimpleFunction && isSuspend -> context.mapping.suspendFunctionsToFunctionWithContinuations[this]?.let { codegen.llvmFunctionOrNull(it)?.llvmValue }
+            else -> codegen.llvmFunctionOrNull(this)?.llvmValue
+        }
+        return if (functionLlvmValue != null) {
             context.debugInfo.subprograms.getOrPut(functionLlvmValue) {
                 memScoped {
                     val subroutineType = subroutineType(context, codegen.llvmTargetData)
@@ -2291,19 +2290,8 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
 
     //-------------------------------------------------------------------------//
 
-    private fun getContinuation(): LLVMValueRef {
-        val caller = functionGenerationContext.irFunction!!
-        return if (caller.isSuspend)
-            codegen.param(caller, caller.allParametersCount)    // The last argument.
-        else {
-            // Suspend call from non-suspend function - must be [invokeSuspend].
-            assert ((caller as IrSimpleFunction).overrides(context.ir.symbols.invokeSuspendFunction.owner),
-                    { "Expected 'BaseContinuationImpl.invokeSuspend' but was '$caller'" })
-            currentCodeContext.genGetValue(caller.dispatchReceiverParameter!!, null)
-        }
-    }
 
-    private fun IrFunction.returnsUnit() = returnType.isUnit() && !isSuspend
+    private fun IrFunction.returnsUnit() = returnType.isUnit()
 
     /**
      * Evaluates all arguments of [expression] that are explicitly represented in the IR.
@@ -2421,17 +2409,15 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
     private fun evaluateFunctionCall(callee: IrCall, args: List<LLVMValueRef>,
                                      resultLifetime: Lifetime, resultSlot: LLVMValueRef?): LLVMValueRef {
         val function = callee.symbol.owner
+        require(!function.isSuspend) { "Suspend functions should be lowered out at this point"}
 
-        val argsWithContinuationIfNeeded = if (function.isSuspend)
-                                               args + getContinuation()
-                                           else args
         return when {
             function.isTypedIntrinsic -> intrinsicGenerator.evaluateCall(callee, args, resultSlot)
-            function.isBuiltInOperator -> evaluateOperatorCall(callee, argsWithContinuationIfNeeded)
+            function.isBuiltInOperator -> evaluateOperatorCall(callee, args)
             function.origin == DECLARATION_ORIGIN_FILE_GLOBAL_INITIALIZER -> evaluateFileGlobalInitializerCall(function)
             function.origin == DECLARATION_ORIGIN_FILE_THREAD_LOCAL_INITIALIZER -> evaluateFileThreadLocalInitializerCall(function)
             function.origin == DECLARATION_ORIGIN_FILE_STANDALONE_THREAD_LOCAL_INITIALIZER -> evaluateFileStandaloneThreadLocalInitializerCall(function)
-            else -> evaluateSimpleFunctionCall(function, argsWithContinuationIfNeeded, resultLifetime, callee.superQualifierSymbol?.owner, resultSlot)
+            else -> evaluateSimpleFunctionCall(function, args, resultLifetime, callee.superQualifierSymbol?.owner, resultSlot)
         }
     }
 
@@ -2681,11 +2667,8 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
 
         val result = call(llvmCallable, args, resultLifetime, exceptionHandler, resultSlot)
 
-        when {
-            !function.isSuspend && function.returnType.isNothing() ->
-                functionGenerationContext.unreachable()
-            needsNativeThreadState ->
-                functionGenerationContext.switchThreadState(ThreadState.Runnable)
+        if(needsNativeThreadState) {
+            functionGenerationContext.switchThreadState(ThreadState.Runnable)
         }
 
         if (llvmCallable.returnType == voidType) {
