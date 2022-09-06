@@ -20,11 +20,11 @@ bitcode {
 
 val hostName: String by project
 
-val build by tasks.registering {
+val build by tasks.getting {
     dependsOn("${hostName}Common")
 }
 
-val clean by tasks.registering {
+val clean by tasks.getting {
     doFirst {
         delete(buildDir)
     }

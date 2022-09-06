@@ -7,13 +7,17 @@ package org.jetbrains.kotlin.bitcode
 
 import kotlinBuildProperties
 import org.gradle.api.Action
+import org.gradle.api.NamedDomainObjectSet
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.jetbrains.kotlin.ExecClang
@@ -101,6 +105,79 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
     }
 
     /**
+     * Base class for [Module] and [CustomModule].
+     *
+     * @property name name of the module.
+     * @property owner [Target] for which this module is created.
+     * @property target target for which module is configured.
+     * @property sanitizer optional sanitizer for the [target].
+     */
+    abstract class AbstractModule(
+            val owner: Target,
+            val name: String,
+    ) {
+        val target by owner::target
+        val sanitizer by owner::sanitizer
+        protected val project by owner.owner::project
+        protected val objects by project::objects
+
+        // TODO: Should this go away?
+        val outputGroup = objects.property<String>().apply {
+            convention("main")
+        }
+
+        /**
+         * Gradle task that produces linked module [name] for [target] with optional [sanitizer].
+         */
+        abstract val task: TaskProvider<CompileToBitcode>
+
+        override fun equals(other: Any?): Boolean {
+            val rhs = other as? AbstractModule ?: return false
+            return name == rhs.name
+        }
+
+        override fun hashCode(): Int {
+            return name.hashCode()
+        }
+    }
+
+    /**
+     * Configure a module for [target] with optional [sanitizer].
+     *
+     * @param owner owner of this module
+     * @param name name of this module
+     */
+    open class Module @Inject constructor(
+        owner: Target,
+        name: String,
+    ) : AbstractModule(owner, name) {
+        // TODO: Should this go away?
+        val srcRoot = objects.directoryProperty().apply {
+            convention(project.layout.projectDirectory.dir("src/$name"))
+        }
+
+        override final val task = project.tasks.register<CompileToBitcode>(fullTaskName(name, target.name, sanitizer), target, sanitizer.asMaybe).apply {
+            configure {
+                when (outputGroup.get()) {
+                    "test" -> this.group = VERIFICATION_BUILD_TASK_GROUP
+                    "main" -> this.group = BUILD_TASK_GROUP
+                }
+                description = "Compiles '$name' to bitcode for $target${sanitizer.description}"
+                dependsOn(":kotlin-native:dependencies:update") // TODO: really needs only the current target
+                this.moduleName.set(name)
+                this.outputFile.convention(moduleName.flatMap { project.layout.buildDirectory.file("bitcode/${outputGroup.get()}/$target${sanitizer.dirSuffix}/$it.bc") })
+                this.outputDirectory.convention(moduleName.flatMap { project.layout.buildDirectory.dir("bitcode/${outputGroup.get()}/$target${sanitizer.dirSuffix}/$it") })
+                this.compiler.convention("clang++")
+                this.inputFiles.from(srcRoot.asFile.get().resolve("cpp"))
+                this.inputFiles.include("**/*.cpp", "**/*.mm")
+                this.inputFiles.exclude("**/*Test.cpp", "**/*TestSupport.cpp", "**/*Test.mm", "**/*TestSupport.mm")
+                this.headersDirs.from(this.inputFiles.dir)
+                this.compilerWorkingDirectory.set(project.layout.projectDirectory.dir("src"))
+            }
+        }
+    }
+
+    /**
      * Configure a group of tests for [target] with optional [sanitizer].
      *
      * @property owner [Target] for which this [TestsGroup] is created.
@@ -153,13 +230,16 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
      * @property target target for which modules are configured.
      * @property sanitizer optional sanitizer for the [target].
      */
-    abstract class Target @Inject constructor(
+    open class Target @Inject constructor(
             val owner: CompileToBitcodeExtension,
             val target: KonanTarget,
             private val _sanitizer: Maybe<SanitizerKind>,
     ) {
-        private val project by owner::project
         val sanitizer by _sanitizer::orNull
+        private val project by owner::project
+        private val objects by project::objects
+
+        private val modules = objects.namedDomainObjectSet<AbstractModule>(AbstractModule::class)
 
         private fun addToCompdb(compileTask: CompileToBitcode) {
             // No need to generate compdb entry for sanitizers.
@@ -179,34 +259,49 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
         }
 
         /**
+         * Configure module named [name] for [target] with optional [sanitizer].
+         *
+         * @param name module name; must be unique
+         * @param action action to apply to the module
+         *
+         * @throws IllegalArgumentException if a module named [name] already exists.
+         */
+        fun module(name: String, action: Action<in Module>): Module {
+            val module = project.objects.newInstance<Module>(this, name).apply {
+                task.configure {
+                    compilerArgs.set(owner.owner.DEFAULT_CPP_FLAGS)
+                }
+                action.execute(this)
+                // TODO: Get rid of get()
+                addToCompdb(task.get())
+            }
+            val added = modules.add(module)
+            require(added) {
+                "Module named $name already exists"
+            }
+            return module
+        }
+
+        /**
+         * Get module named [name] for [target] with optional [sanitizer].
+         *
+         * @param name module name
+         *
+         * @throws UnknownDomainObjectException if module named [name] is not found.
+         */
+        fun module(name: String): Provider<Module> = modules.withType<Module>().named(name)
+
+        /**
          * Configure module for [target] with optional [sanitizer].
          */
         fun module(name: String, srcRoot: File = project.file("src/$name"), outputGroup: String = "main", configurationBlock: CompileToBitcode.() -> Unit = {}) {
-            val task = project.tasks.create(fullTaskName(name, target.name, sanitizer), CompileToBitcode::class.java, target, sanitizer.asMaybe).apply {
-                this.moduleName.set(name)
-                this.outputFile.convention(moduleName.flatMap { project.layout.buildDirectory.file("bitcode/$outputGroup/$target${sanitizer.dirSuffix}/$it.bc") })
-                this.outputDirectory.convention(moduleName.flatMap { project.layout.buildDirectory.dir("bitcode/$outputGroup/$target${sanitizer.dirSuffix}/$it") })
-                this.compiler.convention("clang++")
-                this.compilerArgs.set(owner.DEFAULT_CPP_FLAGS)
-                this.inputFiles.from(srcRoot.resolve("cpp"))
-                this.inputFiles.include("**/*.cpp", "**/*.mm")
-                this.inputFiles.exclude("**/*Test.cpp", "**/*TestSupport.cpp", "**/*Test.mm", "**/*TestSupport.mm")
-                this.headersDirs.from(this.inputFiles.dir)
-                this.compilerWorkingDirectory.set(project.layout.projectDirectory.dir("src"))
-                when (outputGroup) {
-                    "test" -> this.group = VERIFICATION_BUILD_TASK_GROUP
-                    "main" -> this.group = BUILD_TASK_GROUP
+            module(name, action = {
+                this.outputGroup.set(outputGroup)
+                this.srcRoot.set(srcRoot)
+                this.task.configure {
+                    configurationBlock()
                 }
-                this.description = "Compiles '$name' to bitcode for $target${sanitizer.description}"
-                dependsOn(":kotlin-native:dependencies:update")
-                configurationBlock()
-            }
-            addToCompdb(task)
-            if (outputGroup == "main") {
-                allMainModulesTask.configure {
-                    dependsOn(task)
-                }
-            }
+            })
         }
 
         fun testsGroup(
@@ -300,6 +395,11 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
         val allMainModulesTask = project.tasks.register("${target}${project.name.capitalized}${sanitizer.taskSuffix}") {
             description = "Build all main modules of ${project.name.capitalized} for $target${sanitizer.description}"
             group = BUILD_TASK_GROUP
+            dependsOn(modules.matching {
+                it.outputGroup.get() == "main"
+            }.map {
+                it.task
+            })
         }
 
         /**
