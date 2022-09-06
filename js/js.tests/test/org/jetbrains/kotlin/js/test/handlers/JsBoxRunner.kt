@@ -30,11 +30,11 @@ class JsBoxRunner(testServices: TestServices) : AbstractJsArtifactsCollector(tes
         val withModuleSystem = testWithModuleSystem(testServices)
         val testModuleName = getTestModuleName(testServices)
         val testPackage = extractTestPackage(testServices)
-        val entryModulePath = extractEntryModulePath(testServices, modulesToArtifact)
 
         val dontSkipRegularMode = JsEnvironmentConfigurationDirectives.SKIP_REGULAR_MODE !in globalDirectives
         if (dontSkipRegularMode) {
-            for (jsFiles in allJsFiles.values) {
+            for ((mode, jsFiles) in allJsFiles) {
+                val entryModulePath = extractEntryModulePath(mode, testServices)
                 runGeneratedCode(entryModulePath, jsFiles, testModuleName, testPackage, withModuleSystem)
             }
         }

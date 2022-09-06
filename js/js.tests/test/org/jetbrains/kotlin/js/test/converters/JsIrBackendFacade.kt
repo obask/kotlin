@@ -164,11 +164,19 @@ class JsIrBackendFacade(
         val runIrDce = JsEnvironmentConfigurationDirectives.RUN_IR_DCE in module.directives
         val runNewIr2Js = JsEnvironmentConfigurationDirectives.RUN_NEW_IR_2_JS in module.directives
         val perModuleOnly = JsEnvironmentConfigurationDirectives.SPLIT_PER_MODULE in module.directives
+        val isEsModules = JsEnvironmentConfigurationDirectives.ES_MODULES in module.directives
 
         val outputFile = File(JsEnvironmentConfigurator.getJsModuleArtifactPath(testServices, module.name, TranslationMode.FULL) + module.kind.extension)
 
         if (runNewIr2Js) {
-            val transformer = IrModuleToJsTransformerTmp(loweredIr.context, mainArguments)
+            val transformer = IrModuleToJsTransformerTmp(
+                loweredIr.context,
+                mainArguments,
+                moduleToName = JsIrModuleToPath(
+                    testServices,
+                    isEsModules && granularity != JsGenerationGranularity.WHOLE_PROGRAM
+                )
+            )
 
             // If runIrDce then include DCE results
             // If perModuleOnly then skip whole program
@@ -345,13 +353,18 @@ val TestModule.kind: ModuleKind
     get() = directives.moduleKind
 
 fun String.augmentWithModuleName(moduleName: String): String {
-    val suffix = when {
-        endsWith(ESM_EXTENSION) -> ESM_EXTENSION
-        endsWith(REGULAR_EXTENSION) -> REGULAR_EXTENSION
-        else -> error("Unexpected file '$this' extension")
+    return if (moduleName.isPath()) {
+        replaceAfterLast(File.separator, moduleName.replace("./", ""))
+    } else {
+        val suffix = when {
+            endsWith(ESM_EXTENSION) -> ESM_EXTENSION
+            endsWith(REGULAR_EXTENSION) -> REGULAR_EXTENSION
+            else -> error("Unexpected file '$this' extension")
+        }
+        removeSuffix("_v5$suffix") + "-${moduleName}_v5$suffix"
     }
-
-    return removeSuffix("_v5$suffix") + "-${moduleName}_v5$suffix"
 }
+
+private fun String.isPath(): Boolean = contains("/")
 
 fun File.augmentWithModuleName(moduleName: String): File = File(absolutePath.augmentWithModuleName(moduleName))

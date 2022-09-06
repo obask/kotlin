@@ -52,8 +52,8 @@ class JsIrPathReplacer(testServices: TestServices) : DeclarationTransformer {
             .map { module -> module to module.files.filter { it.isJsFile || it.isMjsFile } }
             .filter { (_, files) -> files.isNotEmpty() }
             .flatMap { (module, files) ->  files.map { it.relativePath to module.getNameFor(it, this) } }
-            .plus(getAdditionalFiles(this).map { it.name to it.absolutePath })
-            .plus(getAdditionalMainFiles(this).map { it.name to it.absolutePath })
+            .plus(getAdditionalFiles(this).map { it.name to it.name })
+            .plus(getAdditionalMainFiles(this).map { it.name to it.name })
             .toMap()
     }
 }

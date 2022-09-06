@@ -369,7 +369,7 @@ private fun generateWrappedModuleBody(
         // mutable container allows explicitly remove elements from itself,
         // so we are able to help GC to free heavy JsIrModule objects
         // TODO: It makes sense to invent something better, because this logic can be easily broken
-        val moduleToRef = program.asCrossModuleDependencies(relativeRequirePath).toMutableList()
+        val moduleToRef = program.asCrossModuleDependencies(moduleKind, relativeRequirePath).toMutableList()
         val mainModule = moduleToRef.removeLast().let { (main, mainRef) ->
             generateSingleWrappedModuleBody(
                 mainModuleName,
@@ -423,7 +423,7 @@ fun generateSingleWrappedModuleBody(
     sourceMapsInfo: SourceMapsInfo?,
     generateScriptModule: Boolean,
     generateCallToMain: Boolean,
-    crossModuleReferences: CrossModuleReferences = CrossModuleReferences.Empty,
+    crossModuleReferences: CrossModuleReferences = CrossModuleReferences.Empty(moduleKind),
     outJsProgram: Boolean = true
 ): CompilationOutputs {
     val program = Merger(

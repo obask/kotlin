@@ -39,8 +39,12 @@ fun TestModule.getNameFor(file: TestFile, testServices: TestServices): String {
     return getNameFor(file.name, testServices)
 }
 
-private fun extractJsFiles(testServices: TestServices, modules: List<TestModule>): Pair<List<String>, List<String>> {
-    val outputDir = JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices)
+private fun extractJsFiles(
+    testServices: TestServices,
+    modules: List<TestModule>,
+    mode: TranslationMode = TranslationMode.FULL,
+): Pair<List<String>, List<String>> {
+    val outputDir = JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices, mode)
 
     fun copyInputJsFile(module: TestModule, inputJsFile: TestFile): String {
         val newName = module.getNameFor(inputJsFile, testServices)
@@ -63,11 +67,15 @@ private fun extractJsFiles(testServices: TestServices, modules: List<TestModule>
     return before to after
 }
 
-fun getAdditionalFilePathes(testServices: TestServices): List<String> {
-   return getAdditionalFiles(testServices, true).map { it.absolutePath }
+fun getAdditionalFilePathes(testServices: TestServices, mode: TranslationMode = TranslationMode.FULL): List<String> {
+   return getAdditionalFiles(testServices, mode, true).map { it.absolutePath }
 }
 
-fun getAdditionalFiles(testServices: TestServices, shouldCopyFiles: Boolean = false): List<File> {
+fun getAdditionalFiles(
+    testServices: TestServices,
+    mode: TranslationMode = TranslationMode.FULL,
+    shouldCopyFiles: Boolean = false
+): List<File> {
     val originalFile = testServices.moduleStructure.originalTestDataFiles.first()
 
     val withModuleSystem = testWithModuleSystem(testServices)
@@ -82,7 +90,7 @@ fun getAdditionalFiles(testServices: TestServices, shouldCopyFiles: Boolean = fa
     originalFile.parentFile.resolve(originalFile.nameWithoutExtension + JavaScript.DOT_MODULE_EXTENSION)
         .takeIf { it.exists() }
         ?.let {
-            File(JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices), it.name).apply {
+            File(JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices, mode), it.name).apply {
                 if (shouldCopyFiles) it.copyTo(this, true)
             }
         }
@@ -91,11 +99,15 @@ fun getAdditionalFiles(testServices: TestServices, shouldCopyFiles: Boolean = fa
     return additionalFiles
 }
 
-fun getAdditionalMainFilePathes(testServices: TestServices): List<String> {
-    return getAdditionalMainFiles(testServices, shouldCopyFiles = true).map { it.absolutePath }
+fun getAdditionalMainFilePathes(testServices: TestServices, mode: TranslationMode = TranslationMode.FULL): List<String> {
+    return getAdditionalMainFiles(testServices, mode, shouldCopyFiles = true).map { it.absolutePath }
 }
 
-fun getAdditionalMainFiles(testServices: TestServices, shouldCopyFiles: Boolean = false): List<File> {
+fun getAdditionalMainFiles(
+    testServices: TestServices,
+    mode: TranslationMode = TranslationMode.FULL,
+    shouldCopyFiles: Boolean = false
+): List<File> {
     val originalFile = testServices.moduleStructure.originalTestDataFiles.first()
     val additionalFiles = mutableListOf<File>()
 
@@ -106,7 +118,7 @@ fun getAdditionalMainFiles(testServices: TestServices, shouldCopyFiles: Boolean 
     originalFile.parentFile.resolve(originalFile.nameWithoutExtension + "__main.mjs")
         .takeIf { it.exists() }
         ?.let {
-            File(JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices), it.name).apply {
+            File(JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices, mode), it.name).apply {
                 if (shouldCopyFiles) it.copyTo(this, true)
             }
         }
@@ -122,26 +134,30 @@ fun testWithModuleSystem(testServices: TestServices): Boolean {
     return mainModuleKind != ModuleKind.PLAIN && NO_JS_MODULE_SYSTEM !in globalDirectives
 }
 
+fun getModeOutputFilePath(testServices: TestServices, module: TestModule, mode: TranslationMode): String {
+    return JsEnvironmentConfigurator.getJsModuleArtifactPath(testServices, module.name, mode) + module.kind.extension
+}
+
 fun getAllFilesForRunner(
     testServices: TestServices, modulesToArtifact: Map<TestModule, BinaryArtifacts.Js>
 ): Map<TranslationMode, List<String>> {
     val originalFile = testServices.moduleStructure.originalTestDataFiles.first()
 
     val commonFiles = JsAdditionalSourceProvider.getAdditionalJsFiles(originalFile.parent).map { it.absolutePath }
-    val (inputJsFilesBefore, inputJsFilesAfter) = extractJsFiles(testServices, testServices.moduleStructure.modules)
-    val additionalFiles = getAdditionalFilePathes(testServices)
-    val additionalMainFiles = getAdditionalMainFilePathes(testServices)
 
     if (modulesToArtifact.values.any { it is BinaryArtifacts.Js.JsIrArtifact }) {
         // JS IR
         val (module, compilerResult) = modulesToArtifact.entries.mapNotNull { (m, c) -> (c as? BinaryArtifacts.Js.JsIrArtifact)?.let { m to c.compilerResult } }.single()
-
         val result = mutableMapOf<TranslationMode, List<String>>()
 
         compilerResult.outputs.entries.forEach { (mode, outputs) ->
             val paths = mutableListOf<String>()
 
-            val outputFile = JsEnvironmentConfigurator.getJsModuleArtifactPath(testServices, module.name, mode) + module.kind.extension
+            val outputFile = getModeOutputFilePath(testServices, module, mode)
+            val (inputJsFilesBefore, inputJsFilesAfter) = extractJsFiles(testServices, testServices.moduleStructure.modules, mode)
+            val additionalFiles = getAdditionalFilePathes(testServices, mode)
+            val additionalMainFiles = getAdditionalMainFilePathes(testServices, mode)
+
             outputs.dependencies.forEach { (moduleId, _) ->
                 paths += outputFile.augmentWithModuleName(moduleId)
             }
@@ -152,6 +168,9 @@ fun getAllFilesForRunner(
 
         return result
     } else {
+        val (inputJsFilesBefore, inputJsFilesAfter) = extractJsFiles(testServices, testServices.moduleStructure.modules)
+        val additionalFiles = getAdditionalFilePathes(testServices)
+        val additionalMainFiles = getAdditionalMainFilePathes(testServices)
         // Old BE
         val outputDir = JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices)
         val dceOutputDir = JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices, TranslationMode.FULL_DCE_MINIMIZED_NAMES)
@@ -223,13 +242,16 @@ fun extractTestPackage(testServices: TestServices, ignoreEsModules: Boolean = tr
     return fileWithBoxFunction.second.packageFqName.asString().takeIf { it.isNotEmpty() }
 }
 
-fun extractEntryModulePath(testServices: TestServices, modulesToArtifact: Map<TestModule, BinaryArtifacts.Js>): String? =
+fun extractEntryModulePath(
+    mode: TranslationMode,
+    testServices: TestServices,
+): String? =
     if (getBoxFunction(testServices) == null) {
         testServices.moduleStructure.modules
             .find { JsEnvironmentConfigurator.isMainModule(it, testServices) }
             ?.run {
                 files
-                    .find { JsEnvironmentConfigurationDirectives.ENTRY_ES_MODULE in it.directives }
+                    .find { it.isMjsFile && JsEnvironmentConfigurationDirectives.ENTRY_ES_MODULE in it.directives }
                     ?.let {
                         File(JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices), getNameFor(it, testServices)).absolutePath
                     }
@@ -238,7 +260,7 @@ fun extractEntryModulePath(testServices: TestServices, modulesToArtifact: Map<Te
     } else {
         testServices.moduleStructure.modules
             .find { JsEnvironmentConfigurator.isMainModule(it, testServices) }
-            ?.let { modulesToArtifact[it]?.outputFile?.path }
+            ?.let { getModeOutputFilePath(testServices, it, mode) }
     }
 
 
