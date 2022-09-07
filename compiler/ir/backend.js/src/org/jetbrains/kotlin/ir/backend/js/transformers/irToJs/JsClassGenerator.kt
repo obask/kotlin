@@ -216,6 +216,7 @@ class JsClassGenerator(private val irClass: IrClass, val context: JsGenerationCo
     }
 
     private fun IrSimpleFunction.isDefinedInsideExportedInterface(): Boolean {
+        if (isJsExportIgnore() || correspondingPropertySymbol?.owner?.isJsExportIgnore() == true) return false
         return (!isFakeOverride && parentClassOrNull.isExportedInterface(context.staticContext.backendContext)) ||
                 overriddenSymbols.any { it.owner.isDefinedInsideExportedInterface() }
     }

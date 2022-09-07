@@ -10,9 +10,33 @@
 package foo
 
 @JsExport
-class OnlyFooParamExported(val foo: String) {
+interface ExportedInterface {
+    @JsExport.Ignore
+    val baz: String
+
+    @JsExport.Ignore
+    fun inter(): String
+
+    @JsExport.Ignore
+    class NotExportableNestedInsideInterface
+
+    @JsExport.Ignore
+    companion object {
+        val foo: String ="FOO"
+    }
+}
+
+@JsExport
+class OnlyFooParamExported(val foo: String) : ExportedInterface {
     @JsExport.Ignore
     constructor() : this("TEST")
+
+    override val baz = "Baz"
+
+    override fun inter(): String = "Inter"
+
+    @JsExport.Ignore
+    val bar = "Bar"
 
     @JsExport.Ignore
     inline fun <A, reified B> A.notExportableReified(): Boolean = this is B
@@ -32,15 +56,4 @@ class OnlyFooParamExported(val foo: String) {
 
     @JsExport.Ignore
     value class NotExportableInlineClass(val value: Int)
-}
-
-@JsExport
-interface ExportedInterface {
-    @JsExport.Ignore
-    class NotExportableNestedInsideInterface
-
-    @JsExport.Ignore
-    companion object {
-        val foo: String ="FOO"
-    }
 }

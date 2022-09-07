@@ -15,35 +15,35 @@ package foo
 
 
 class OnlyFooParamExported(val foo: String) {
-    .Ignore
+    @JsExport.Ignore
     constructor() : this("TEST")
 
-    .Ignore
+    @JsExport.Ignore
     inline fun <A, reified B> A.notExportableReified(): Boolean = this is B
 
-    .Ignore
+    @JsExport.Ignore
     suspend fun notExportableSuspend(): String = "SuspendResult"
 
-    .Ignore
+    @JsExport.Ignore
     fun notExportableReturn(): List<String> = listOf("1", "2")
 
-    .Ignore
+    @JsExport.Ignore
     val String.notExportableExentsionProperty: String
         get() = "notExportableExentsionProperty"
 
-    .Ignore
+    @JsExport.Ignore
     annotation class NotExportableAnnotation
 
-    .Ignore
+    @JsExport.Ignore
     value class NotExportableInlineClass(val value: Int)
 }
 
 
 interface ExportedInterface {
-    .Ignore
+    @JsExport.Ignore
     class NotExportableNestedInsideInterface
 
-    .Ignore
+    @JsExport.Ignore
     companion object {
         val foo: String ="FOO"
     }
