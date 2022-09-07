@@ -44,7 +44,7 @@ class JsIrPathReplacer(testServices: TestServices) : DeclarationTransformer {
 
     private fun IrConst<String>.getReplacement(): IrConst<String>? {
         val replacement = replacements[value] ?: replacements[value.replace("./", "")] ?: return null
-        return IrConstImpl.string(startOffset, endOffset, type, replacement)
+        return IrConstImpl.string(startOffset, endOffset, type, "./" + replacement.replace("./", ""))
     }
 
     private fun TestServices.collectReplacementsMap(): Map<String, String> {

@@ -23,6 +23,10 @@ fun ScriptEngine.overrideAsserter() {
     eval("this['kotlin-test'].kotlin.test.overrideAsserter_wbnzx$(this['kotlin-test'].kotlin.test.DefaultAsserter);")
 }
 
+private fun String.escapePath(): String {
+    return replace("\\", "\\\\")
+}
+
 @Suppress("UNUSED_PARAMETER")
 fun ScriptEngine.runTestFunction(
     testModuleName: String?,
@@ -33,8 +37,8 @@ fun ScriptEngine.runTestFunction(
     entryModulePath: String? = null,
 ): String {
     var script = when {
-        entryModulePath.orEmpty().endsWith(ESM_EXTENSION) -> "globalThis".also {
-            eval("import('$entryModulePath').then(module => Object.assign(globalThis, module)).catch(console.error)")
+        entryModulePath != null && entryModulePath.endsWith(ESM_EXTENSION) -> "globalThis".also {
+            eval("import('${entryModulePath.escapePath()}').then(module => Object.assign(globalThis, module)).catch(console.error)")
         }
         withModuleSystem -> "\$kotlin_test_internal\$.require('" + testModuleName!! + "')"
         testModuleName === null -> "this"
