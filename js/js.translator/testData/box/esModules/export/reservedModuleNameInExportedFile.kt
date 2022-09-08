@@ -1,17 +1,18 @@
-// DONT_TARGET_EXACT_BACKEND: JS
+// IGNORE_BACKEND: JS
+// EXPECTED_REACHABLE_NODES: 1270
 // SKIP_MINIFICATION
-// SKIP_NODE_JS
 // ES_MODULES
 
-// MODULE: non_identifier_module_name
+// MODULE: if
 // FILE: lib.kt
+@file:JsExport
+
 @JsName("foo")
-@JsExport
 public fun foo(k: String): String = "O$k"
 
 // FILE: entry.mjs
 // ENTRY_ES_MODULE
-import { foo } from "./nonIndetifierModuleName-non_identifier_module_name_v5.mjs";
+import { foo } from "./reservedModuleNameInExportedFile-if_v5.mjs";
 
 export function box() {
     return foo("K")

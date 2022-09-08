@@ -1,14 +1,16 @@
 // EXPECTED_REACHABLE_NODES: 1252
-// DONT_TARGET_EXACT_BACKEND: JS
+// IGNORE_BACKEND: JS
 // ES_MODULES
 
-// MODULE: overriden_external_method_with_same_name_method
-// FILE: lib.kt
+// MODULE: lib
+// FILE: not_exported.kt
+
 external abstract class Foo {
     abstract fun o(): String
 }
 
 abstract class Bar : Foo() {
+    @JsName("oStable")
     abstract fun String.o(): String
 
     override fun o(): String {
@@ -16,7 +18,9 @@ abstract class Bar : Foo() {
     }
 }
 
-@JsExport
+// FILE: exported.kt
+@file:JsExport
+
 class Baz : Bar() {
     override fun String.o(): String {
         return this
@@ -29,11 +33,17 @@ Foo.prototype.k = function() {
     return "K"
 }
 
-// FILE: entry.mjs
+
+// FILE: main.mjs
 // ENTRY_ES_MODULE
-import { Baz } from "./overriddenExternalMethodWithSameNameMethod-overriden_external_method_with_same_name_method_v5.mjs";
+import { Baz }  from "./overriddenExternalMethodWithSameStableNameMethodInExportedFile-lib_v5.mjs"
 
 export function box() {
-    const foo = new Baz()
+    return test(new Baz());
+}
+
+function test(foo) {
+    const oStable = foo.oStable("OK")
+    if (oStable !== "OK") return "false: " + oStable
     return foo.o() + foo.k()
 }

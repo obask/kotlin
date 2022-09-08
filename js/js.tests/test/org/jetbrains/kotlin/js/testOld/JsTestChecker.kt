@@ -36,6 +36,9 @@ fun ScriptEngine.runTestFunction(
     testFunctionArgs: String = "",
     entryModulePath: String? = null,
 ): String {
+    if (withModuleSystem && testModuleName == null && entryModulePath == null) {
+        error("Entry point was not found. Please specify ENTRY_ES_MODULE directive near js file, if this is ES Modules test.")
+    }
     var script = when {
         entryModulePath != null && entryModulePath.endsWith(ESM_EXTENSION) -> "globalThis".also {
             eval("import('${entryModulePath.escapePath()}').then(module => Object.assign(globalThis, module)).catch(console.error)")

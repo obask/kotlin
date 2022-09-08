@@ -1,0 +1,49 @@
+// EXPECTED_REACHABLE_NODES: 1252
+// IGNORE_BACKEND: JS
+// ES_MODULES
+// SKIP_DCE_DRIVEN
+
+// MODULE: export_nested_class
+// FILE: lib.kt
+@file:JsExport
+
+abstract class A {
+    abstract fun foo(k: String): String
+}
+
+class B {
+    class Foo : A() {
+        override fun foo(k: String): String {
+            return "O" + k
+        }
+
+        fun bar(k: String): String {
+            return foo(k)
+        }
+    }
+}
+
+object MyObject {
+    class A {
+        fun valueA() = "OK"
+    }
+    class B {
+        fun valueB() = "OK"
+    }
+    class C {
+        fun valueC() = "OK"
+    }
+}
+
+// FILE: test.mjs
+// ENTRY_ES_MODULE
+import { B, MyObject } from "./main.mjs"
+
+export function box() {
+    if (new B.Foo().bar("K") != "OK") return "fail 1";
+    if (new MyObject.A().valueA() != "OK") return "fail 2";
+    if (new MyObject.B().valueB() != "OK") return "fail 3";
+    if (new MyObject.C().valueC() != "OK") return "fail 4";
+
+    return "OK"
+}

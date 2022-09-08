@@ -74,7 +74,7 @@ class ExportModelToJsStatements(
             is ExportedFunction -> {
                 val name = namer.getNameForStaticDeclaration(declaration.ir)
                 if (esModules) {
-                    listOf(JsExport(name, alias = JsName(declaration.name, false)))
+                    listOf(JsExport(name, alias = JsName(declaration.name, false).takeIf { name.ident != declaration.name }))
                 } else {
                     if (namespace != null) {
                         listOf(
@@ -116,7 +116,10 @@ class ExportModelToJsStatements(
                 val name = namer.getNameForStaticDeclaration(declaration.ir)
                 val klassExport =
                     if (esModules) {
-                        JsExport(name, alias = JsName(declaration.name, false))
+                        JsExport(
+                            name,
+                            alias = JsName(declaration.name, false).takeIf { name.ident != declaration.name }
+                        )
                     } else {
                         if (namespace != null) {
                             jsAssignment(

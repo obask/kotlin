@@ -1,10 +1,6 @@
 // EXPECTED_REACHABLE_NODES: 1252
 // IGNORE_BACKEND: JS
-// INFER_MAIN_MODULE
 // ES_MODULES
-
-// TODO: Fix tests on Windows
-// DONT_TARGET_EXACT_BACKEND: JS_IR
 
 // MODULE: overriden_external_method_with_same_stable_name_method
 // FILE: lib.kt
