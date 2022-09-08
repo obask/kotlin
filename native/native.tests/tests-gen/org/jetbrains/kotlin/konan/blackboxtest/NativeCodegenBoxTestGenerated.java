@@ -7982,6 +7982,12 @@ public class NativeCodegenBoxTestGenerated extends AbstractNativeCodegenBoxTest 
             }
 
             @Test
+            @TestMetadata("inheritFromAnotherModule.kt")
+            public void testInheritFromAnotherModule() throws Exception {
+                runTest("compiler/testData/codegen/box/coroutines/inheritFromAnotherModule.kt");
+            }
+
+            @Test
             @TestMetadata("inlineFunInGenericClass.kt")
             public void testInlineFunInGenericClass() throws Exception {
                 runTest("compiler/testData/codegen/box/coroutines/inlineFunInGenericClass.kt");

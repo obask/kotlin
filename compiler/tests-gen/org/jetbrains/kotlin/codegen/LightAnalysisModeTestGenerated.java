@@ -7867,6 +7867,11 @@ public class LightAnalysisModeTestGenerated extends AbstractLightAnalysisModeTes
             runTest("compiler/testData/codegen/box/coroutines/indirectInlineUsedAsNonInline.kt");
         }
 
+        @TestMetadata("inheritFromAnotherModule.kt")
+        public void testInheritFromAnotherModule() throws Exception {
+            runTest("compiler/testData/codegen/box/coroutines/inheritFromAnotherModule.kt");
+        }
+
         @TestMetadata("inlineFunInGenericClass.kt")
         public void testInlineFunInGenericClass() throws Exception {
             runTest("compiler/testData/codegen/box/coroutines/inlineFunInGenericClass.kt");
