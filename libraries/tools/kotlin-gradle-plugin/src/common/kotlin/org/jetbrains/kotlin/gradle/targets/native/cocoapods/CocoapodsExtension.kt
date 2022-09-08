@@ -10,23 +10,20 @@ import org.gradle.api.Action
 import org.gradle.api.Named
 import org.gradle.api.NamedDomainObjectSet
 import org.gradle.api.Project
-import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
 import org.jetbrains.kotlin.gradle.dsl.multiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension.CocoapodsDependency.PodLocation.*
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.KotlinCocoapodsPlugin.Companion.POD_FRAMEWORK_PREFIX
 import org.jetbrains.kotlin.gradle.plugin.mpp.Framework
-import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBinary
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
-import org.jetbrains.kotlin.gradle.tasks.addArg
-import org.jetbrains.kotlin.gradle.tasks.addArgs
-import org.jetbrains.kotlin.gradle.utils.relativeToRoot
-import org.jetbrains.kotlin.konan.target.HostManager
 import java.io.File
 import java.net.URI
 import javax.inject.Inject
 
-abstract class CocoapodsExtension @Inject constructor(private val project: Project) {
+//TODO maybe separate file?
+// + finalize DSL
+// + is inheritance ok in this case?
+abstract class PodspecExtension @Inject constructor(project: Project) {
     /**
      * Configure version of the pod
      */
@@ -36,6 +33,54 @@ abstract class CocoapodsExtension @Inject constructor(private val project: Proje
      * Configure authors of the pod built from this project.
      */
     var authors: String? = null
+
+    /**
+     * Configure description of the pod built from this project.
+     */
+    var summary: String? = null
+
+    /**
+     * Configure homepage of the pod built from this project.
+     */
+    var homepage: String? = null
+
+    /**
+     * Configure location of the pod built from this project.
+     */
+    var source: String? = null
+
+    /**
+     * Configure name of the pod built from this project.
+     */
+    var name: String = project.name.asValidFrameworkName()
+
+    /**
+     * Configure license of the pod built from this project.
+     */
+    var license: String? = null
+
+    /**
+     * Configure other podspec attributes
+     */
+    var extraSpecAttributes: MutableMap<String, String> = mutableMapOf()
+    val ios: PodspecPlatformSettings = PodspecPlatformSettings("ios")
+    val osx: PodspecPlatformSettings = PodspecPlatformSettings("osx")
+    val tvos: PodspecPlatformSettings = PodspecPlatformSettings("tvos")
+    val watchos: PodspecPlatformSettings = PodspecPlatformSettings("watchos")
+
+    data class PodspecPlatformSettings(
+        private val name: String,
+        @get:Optional @get:Input var deploymentTarget: String? = null
+    ) : Named {
+
+        @Input
+        override fun getName(): String = name
+    }
+
+}
+
+
+abstract class CocoapodsExtension @Inject constructor(private val project: Project) : PodspecExtension(project) {
 
     /**
      * Configure existing file `Podfile`.
@@ -61,36 +106,6 @@ abstract class CocoapodsExtension @Inject constructor(private val project: Proje
     internal var useLibraries: Boolean = false
 
     /**
-     * Configure name of the pod built from this project.
-     */
-    var name: String = project.name.asValidFrameworkName()
-
-    /**
-     * Configure license of the pod built from this project.
-     */
-    var license: String? = null
-
-    /**
-     * Configure description of the pod built from this project.
-     */
-    var summary: String? = null
-
-    /**
-     * Configure homepage of the pod built from this project.
-     */
-    var homepage: String? = null
-
-    /**
-     * Configure location of the pod built from this project.
-     */
-    var source: String? = null
-
-    /**
-     * Configure other podspec attributes
-     */
-    var extraSpecAttributes: MutableMap<String, String> = mutableMapOf()
-
-    /**
      * Configure framework of the pod built from this project.
      */
     fun framework(configure: Framework.() -> Unit) {
@@ -103,14 +118,6 @@ abstract class CocoapodsExtension @Inject constructor(private val project: Proje
     fun framework(configure: Action<Framework>) {
         forAllPodFrameworks(configure)
     }
-
-    val ios: PodspecPlatformSettings = PodspecPlatformSettings("ios")
-
-    val osx: PodspecPlatformSettings = PodspecPlatformSettings("osx")
-
-    val tvos: PodspecPlatformSettings = PodspecPlatformSettings("tvos")
-
-    val watchos: PodspecPlatformSettings = PodspecPlatformSettings("watchos")
 
     private val anyPodFramework = project.provider {
         val anyTarget = project.multiplatformExtension.supportedTargets().first()
@@ -331,15 +338,6 @@ abstract class CocoapodsExtension @Inject constructor(private val project: Proje
                 }
             }
         }
-    }
-
-    data class PodspecPlatformSettings(
-        private val name: String,
-        @get:Optional @get:Input var deploymentTarget: String? = null
-    ) : Named {
-
-        @Input
-        override fun getName(): String = name
     }
 
     class SpecRepos {

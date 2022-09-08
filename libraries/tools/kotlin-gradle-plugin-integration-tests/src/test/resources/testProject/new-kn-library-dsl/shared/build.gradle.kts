@@ -1,5 +1,6 @@
 plugins {
     kotlin("multiplatform")
+    kotlin("native.cocoapods") // TODO should this be separate project?
 }
 
 kotlin {
@@ -48,5 +49,9 @@ kotlinArtifacts {
             project(":shared"),
             project(":lib")
         )
+        withPodspec {
+            summary = "This is the summary"
+            license = "LGPL"
+        }
     }
 }
