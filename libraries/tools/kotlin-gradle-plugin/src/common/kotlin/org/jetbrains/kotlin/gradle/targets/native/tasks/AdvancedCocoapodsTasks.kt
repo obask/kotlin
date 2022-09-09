@@ -6,15 +6,17 @@
 package org.jetbrains.kotlin.gradle.targets.native.tasks
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.artifacts.repositories.ArtifactRepository
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
+import org.gradle.api.file.RelativePath
 import org.gradle.api.logging.Logger
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
 import org.gradle.api.tasks.Optional
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension.*
-import org.jetbrains.kotlin.gradle.plugin.cocoapods.PodspecExtension.*
+import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension.CocoapodsDependency.PodLocation.*
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.cocoapodsBuildDirs
 import org.jetbrains.kotlin.gradle.targets.native.cocoapods.MissingCocoapodsMessage
 import org.jetbrains.kotlin.gradle.targets.native.cocoapods.MissingSpecReposMessage
@@ -25,6 +27,7 @@ import org.jetbrains.kotlin.konan.target.HostManager
 import java.io.File
 import java.io.IOException
 import java.io.Reader
+import java.net.URI
 import java.util.*
 import kotlin.concurrent.thread
 

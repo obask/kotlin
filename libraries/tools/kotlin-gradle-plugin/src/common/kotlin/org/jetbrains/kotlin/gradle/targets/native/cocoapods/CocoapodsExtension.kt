@@ -10,7 +10,6 @@ import org.gradle.api.Action
 import org.gradle.api.Named
 import org.gradle.api.NamedDomainObjectSet
 import org.gradle.api.Project
-import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.tasks.*
 import org.jetbrains.kotlin.gradle.dsl.KotlinNativeXCFrameworkConfig
 import org.jetbrains.kotlin.gradle.dsl.multiplatformExtension
@@ -20,7 +19,6 @@ import org.jetbrains.kotlin.gradle.plugin.cocoapods.KotlinCocoapodsPlugin.Compan
 import org.jetbrains.kotlin.gradle.plugin.findExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.Framework
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.io.File
 import java.net.URI
 import javax.inject.Inject
@@ -370,7 +368,8 @@ abstract class CocoapodsExtension @Inject constructor(private val project: Proje
 // Also find a better location for this
 fun KotlinNativeXCFrameworkConfig.withPodspec(configure: PodspecExtension.() -> Unit) {
     val extension = findExtension<PodspecExtension>(ARTIFACTS_PODSPEC_EXTENSION_NAME)
-        ?: error("CocoaPods plugin should be applied before using `$ARTIFACTS_PODSPEC_EXTENSION_NAME` extension")
+
+    checkNotNull(extension) { "CocoaPods plugin should be applied before using `$ARTIFACTS_PODSPEC_EXTENSION_NAME` extension" }
 
     extension.configure()
 }
