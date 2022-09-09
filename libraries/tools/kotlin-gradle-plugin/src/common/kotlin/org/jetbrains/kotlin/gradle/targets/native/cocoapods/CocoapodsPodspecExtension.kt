@@ -31,6 +31,7 @@ abstract class CocoapodsPodspecExtension @Inject constructor(private val project
      */
     var authors: String? = null
 
+    // TODO can framework and podspec have different names?
     /**
      * Configure name of the pod built from this project.
      */

@@ -399,7 +399,7 @@ open class KotlinCocoapodsPlugin : Plugin<Project> {
 
         val podspecTaskName = lowerCamelCaseName("generate", xcFramework.name, "podspec")
         val podspecTask = project.tasks.register(podspecTaskName, PodspecTask::class.java) {
-            it.group = TASK_GROUP // TODO the group is OK?
+            it.group = TASK_GROUP
             it.description = "Generates a podspec file for '${xcFramework.name}' artifact"
             it.needPodspec = project.provider { true }
             it.publishing.set(true)
