@@ -10,12 +10,17 @@ import org.gradle.api.Action
 import org.gradle.api.Named
 import org.gradle.api.NamedDomainObjectSet
 import org.gradle.api.Project
+import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.tasks.*
+import org.jetbrains.kotlin.gradle.dsl.KotlinNativeXCFrameworkConfig
 import org.jetbrains.kotlin.gradle.dsl.multiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension.CocoapodsDependency.PodLocation.*
+import org.jetbrains.kotlin.gradle.plugin.cocoapods.KotlinCocoapodsPlugin.Companion.ARTIFACTS_PODSPEC_EXTENSION_NAME
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.KotlinCocoapodsPlugin.Companion.POD_FRAMEWORK_PREFIX
+import org.jetbrains.kotlin.gradle.plugin.findExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.Framework
 import org.jetbrains.kotlin.gradle.plugin.mpp.NativeBuildType
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.io.File
 import java.net.URI
 import javax.inject.Inject
@@ -359,4 +364,13 @@ abstract class CocoapodsExtension @Inject constructor(private val project: Proje
             .split("/")[0]     // Pick the module name from a subspec name.
             .replace('-', '_') // Support pods with dashes in names (see https://github.com/JetBrains/kotlin-native/issues/2884).
     }
+}
+
+// TODO figure out the way for Gradle Kotlin DSL to generate this for us
+// Also find a better location for this
+fun KotlinNativeXCFrameworkConfig.withPodspec(configure: PodspecExtension.() -> Unit) {
+    val extension = findExtension<PodspecExtension>(ARTIFACTS_PODSPEC_EXTENSION_NAME)
+        ?: error("CocoaPods plugin should be applied before using `$ARTIFACTS_PODSPEC_EXTENSION_NAME` extension")
+
+    extension.configure()
 }

@@ -9,7 +9,6 @@ package org.jetbrains.kotlin.gradle.plugin.cocoapods
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider
 import org.jetbrains.kotlin.daemon.common.trimQuotes
@@ -18,7 +17,6 @@ import org.jetbrains.kotlin.gradle.dsl.multiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.addExtension
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension.CocoapodsDependency
-import org.jetbrains.kotlin.gradle.plugin.findExtension
 import org.jetbrains.kotlin.gradle.plugin.ide.Idea222Api
 import org.jetbrains.kotlin.gradle.plugin.ide.ideaImportDependsOn
 import org.jetbrains.kotlin.gradle.plugin.mpp.*
@@ -38,7 +36,6 @@ import org.jetbrains.kotlin.konan.target.Family
 import org.jetbrains.kotlin.konan.target.HostManager
 import org.jetbrains.kotlin.konan.target.KonanTarget
 import org.jetbrains.kotlin.konan.target.KonanTarget.*
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.io.File
 
 internal val Project.cocoapodsBuildDirs: CocoapodsBuildDirs
@@ -397,10 +394,11 @@ open class KotlinCocoapodsPlugin : Plugin<Project> {
         xcFramework: KotlinNativeXCFramework,
         podspecExtension: PodspecExtension,
     ) {
-        val assembleTaskProvider = project.tasks.named(xcFramework.taskName)
+        val assembleTask = project.tasks.named(xcFramework.taskName)
 
-        project.tasks.register(lowerCamelCaseName("generate", xcFramework.name, "podspec"), PodspecTask::class.java) { // TODO names to constants?
-            it.group = TASK_GROUP
+        // TODO names to constants?
+        val podspecTask = project.tasks.register(lowerCamelCaseName("generate", xcFramework.name, "podspec"), PodspecTask::class.java) {
+            it.group = TASK_GROUP // TODO the group is OK?
             it.description = "Generates a podspec file for '${xcFramework.name}' artifact"
             it.needPodspec = project.provider { true }
             it.publishing.set(true)
@@ -418,23 +416,20 @@ open class KotlinCocoapodsPlugin : Plugin<Project> {
             it.osx = project.provider { podspecExtension.osx }
             it.tvos = project.provider { podspecExtension.tvos }
             it.watchos = project.provider { podspecExtension.watchos }
-
-            assembleTaskProvider.dependsOn(it)
         }
-    }
 
-    // TODO move to appropriate location
-    private val ARTIFACTS_WITH_PODSPEC_EXTENSION = "withPodspec"
+        assembleTask.dependsOn(podspecTask)
+    }
 
     private fun injectPodspecExtensionToArtifacts(project: Project, artifactsExtension: KotlinArtifactsExtension) {
         // TODO support everything, not just xcframeworks
         artifactsExtension.artifactConfigs.withType(KotlinNativeXCFrameworkConfig::class.java) { xcFrameworkConfig ->
             val podspecExtension = project.objects.newInstance<PodspecExtension>(project)
-            xcFrameworkConfig.cast<ExtensionAware>().extensions.addExtension(ARTIFACTS_WITH_PODSPEC_EXTENSION, podspecExtension)
+            xcFrameworkConfig.addExtension(ARTIFACTS_PODSPEC_EXTENSION_NAME, podspecExtension)
         }
 
         artifactsExtension.artifacts.withType(KotlinNativeXCFramework::class.java) { xcFramework ->
-            val podspecExtension = xcFramework.extensions.findExtension<PodspecExtension>(ARTIFACTS_WITH_PODSPEC_EXTENSION)
+            val podspecExtension = xcFramework.extensions.findByName(ARTIFACTS_PODSPEC_EXTENSION_NAME) as PodspecExtension?
 
             if (podspecExtension != null) {
                 registerPodspecTask(project, xcFramework, podspecExtension)
@@ -785,6 +780,7 @@ open class KotlinCocoapodsPlugin : Plugin<Project> {
         const val POD_SETUP_BUILD_TASK_NAME = "podSetupBuild"
         const val POD_BUILD_TASK_NAME = "podBuild"
         const val POD_IMPORT_TASK_NAME = "podImport"
+        const val ARTIFACTS_PODSPEC_EXTENSION_NAME = "withPodspec"
 
         // We don't move these properties in PropertiesProvider because
         // they are not intended to be overridden in local.properties.

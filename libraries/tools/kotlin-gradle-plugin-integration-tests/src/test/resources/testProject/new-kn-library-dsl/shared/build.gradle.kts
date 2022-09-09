@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.plugin.cocoapods.withPodspec
+
 plugins {
     kotlin("multiplatform")
     kotlin("native.cocoapods") // TODO should this be separate project?
