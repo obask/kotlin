@@ -429,7 +429,7 @@ open class KotlinCocoapodsPlugin : Plugin<Project> {
     private fun injectPodspecExtensionToArtifacts(project: Project, artifactsExtension: KotlinArtifactsExtension) {
         // TODO support everything, not just xcframeworks
         artifactsExtension.artifactConfigs.withType(KotlinNativeXCFrameworkConfig::class.java) { xcFrameworkConfig ->
-            val podspecExtension = project.objects.newInstance<PodspecExtension>()
+            val podspecExtension = project.objects.newInstance<PodspecExtension>(project)
             xcFrameworkConfig.cast<ExtensionAware>().extensions.addExtension(ARTIFACTS_WITH_PODSPEC_EXTENSION, podspecExtension)
         }
 
