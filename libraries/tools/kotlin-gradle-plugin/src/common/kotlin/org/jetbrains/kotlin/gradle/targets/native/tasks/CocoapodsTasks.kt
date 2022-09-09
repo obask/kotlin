@@ -21,6 +21,8 @@ import org.jetbrains.kotlin.gradle.plugin.cocoapods.KotlinCocoapodsPlugin.Compan
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.KotlinCocoapodsPlugin.Companion.GENERATE_WRAPPER_PROPERTY
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.KotlinCocoapodsPlugin.Companion.SYNC_TASK_NAME
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.cocoapodsBuildDirs
+import org.jetbrains.kotlin.gradle.targets.native.cocoapods.CocoapodsPodspecExtension.CocoapodsDependency
+import org.jetbrains.kotlin.gradle.targets.native.cocoapods.CocoapodsPodspecExtension.PodspecPlatformSettings
 import org.jetbrains.kotlin.gradle.utils.appendLine
 import java.io.File
 

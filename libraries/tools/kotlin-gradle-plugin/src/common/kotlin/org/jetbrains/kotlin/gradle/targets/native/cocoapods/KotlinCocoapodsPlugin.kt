@@ -397,13 +397,13 @@ open class KotlinCocoapodsPlugin : Plugin<Project> {
     ) {
         val assembleTask = project.tasks.named(xcFramework.taskName)
 
-        // TODO names to constants?
-        val podspecTask = project.tasks.register(lowerCamelCaseName("generate", xcFramework.name, "podspec"), PodspecTask::class.java) {
+        val podspecTaskName = lowerCamelCaseName("generate", xcFramework.name, "podspec")
+        val podspecTask = project.tasks.register(podspecTaskName, PodspecTask::class.java) {
             it.group = TASK_GROUP // TODO the group is OK?
             it.description = "Generates a podspec file for '${xcFramework.name}' artifact"
             it.needPodspec = project.provider { true }
             it.publishing.set(true)
-            it.pods.set(emptyList()) // TODO ask about this
+            it.pods.set(podspecExtension.pods)
             it.version.set(podspecExtension.version ?: project.version.toString())
             it.specName.set(podspecExtension.name)
             it.extraSpecAttributes.set(podspecExtension.extraSpecAttributes)
