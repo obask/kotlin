@@ -6,8 +6,8 @@
 package org.jetbrains.kotlin.gradle.targets.native.cocoapods
 
 import org.gradle.api.Project
-import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension.CocoapodsDependency
 import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension.SpecRepos
+import org.jetbrains.kotlin.gradle.targets.native.cocoapods.CocoapodsPodspecExtension.CocoapodsDependency
 
 interface MissingInfoMessage<T> {
     val missingInfo: T

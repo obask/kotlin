@@ -16,7 +16,6 @@ import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.dsl.multiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.addExtension
-import org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension.CocoapodsDependency
 import org.jetbrains.kotlin.gradle.plugin.ide.Idea222Api
 import org.jetbrains.kotlin.gradle.plugin.ide.ideaImportDependsOn
 import org.jetbrains.kotlin.gradle.plugin.mpp.*
@@ -25,6 +24,8 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.apple.AppleTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.FrameworkCopy
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFrameworkTask
 import org.jetbrains.kotlin.gradle.plugin.whenEvaluated
+import org.jetbrains.kotlin.gradle.targets.native.cocoapods.CocoapodsPodspecExtension
+import org.jetbrains.kotlin.gradle.targets.native.cocoapods.CocoapodsPodspecExtension.CocoapodsDependency
 import org.jetbrains.kotlin.gradle.targets.native.tasks.*
 import org.jetbrains.kotlin.gradle.targets.native.tasks.artifact.kotlinArtifactsExtension
 import org.jetbrains.kotlin.gradle.tasks.*
@@ -392,7 +393,7 @@ open class KotlinCocoapodsPlugin : Plugin<Project> {
     private fun registerPodspecTask(
         project: Project,
         xcFramework: KotlinNativeXCFramework,
-        podspecExtension: PodspecExtension,
+        podspecExtension: CocoapodsPodspecExtension,
     ) {
         val assembleTask = project.tasks.named(xcFramework.taskName)
 
@@ -424,12 +425,12 @@ open class KotlinCocoapodsPlugin : Plugin<Project> {
     private fun injectPodspecExtensionToArtifacts(project: Project, artifactsExtension: KotlinArtifactsExtension) {
         // TODO support everything, not just xcframeworks
         artifactsExtension.artifactConfigs.withType(KotlinNativeXCFrameworkConfig::class.java) { xcFrameworkConfig ->
-            val podspecExtension = project.objects.newInstance<PodspecExtension>(project)
+            val podspecExtension = project.objects.newInstance<CocoapodsPodspecExtension>(project)
             xcFrameworkConfig.addExtension(ARTIFACTS_PODSPEC_EXTENSION_NAME, podspecExtension)
         }
 
         artifactsExtension.artifacts.withType(KotlinNativeXCFramework::class.java) { xcFramework ->
-            val podspecExtension = xcFramework.extensions.findByName(ARTIFACTS_PODSPEC_EXTENSION_NAME) as PodspecExtension?
+            val podspecExtension = xcFramework.extensions.findByName(ARTIFACTS_PODSPEC_EXTENSION_NAME) as CocoapodsPodspecExtension?
 
             if (podspecExtension != null) {
                 registerPodspecTask(project, xcFramework, podspecExtension)

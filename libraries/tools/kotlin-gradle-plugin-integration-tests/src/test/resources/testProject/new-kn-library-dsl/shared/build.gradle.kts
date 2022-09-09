@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.gradle.plugin.cocoapods.withPodspec
+import org.jetbrains.kotlin.gradle.targets.native.cocoapods.withPodspec
 
 plugins {
     kotlin("multiplatform")
