@@ -45,75 +45,79 @@ bitcode {
             }
         }
 
-        module("mimalloc") {
-            val srcRoot = file("src/mimalloc")
-            compiler.set("clang")
-            compilerArgs.set(listOfNotNull(
-                    "-std=gnu11",
-                    if (sanitizer == SanitizerKind.THREAD) {
-                        "-O1"
-                    } else {
-                        "-O3"
-                    },
-                    "-DKONAN_MI_MALLOC=1",
-                    "-Wno-unknown-pragmas",
-                    "-ftls-model=initial-exec",
-                    "-Wno-unused-function",
-                    "-Wno-error=atomic-alignment",
-                    "-Wno-unused-parameter", /* for windows 32 */
-                    "-DMI_TSAN=1".takeIf { sanitizer == SanitizerKind.THREAD },
-            ))
-            inputFiles.from("$srcRoot/c")
-            inputFiles.include("**/*.c")
-            inputFiles.exclude("**/alloc-override*.c", "**/page-queue.c", "**/static.c", "**/bitmap.inc.c")
-            headersDirs.setFrom("$srcRoot/c/include")
+        customModule("mimalloc") {
+            task.configure {
+                val srcRoot = file("src/mimalloc")
+                compiler.set("clang")
+                compilerArgs.set(listOfNotNull(
+                        "-std=gnu11",
+                        if (sanitizer == SanitizerKind.THREAD) {
+                            "-O1"
+                        } else {
+                            "-O3"
+                        },
+                        "-DKONAN_MI_MALLOC=1",
+                        "-Wno-unknown-pragmas",
+                        "-ftls-model=initial-exec",
+                        "-Wno-unused-function",
+                        "-Wno-error=atomic-alignment",
+                        "-Wno-unused-parameter", /* for windows 32 */
+                        "-DMI_TSAN=1".takeIf { sanitizer == SanitizerKind.THREAD },
+                ))
+                inputFiles.from("$srcRoot/c")
+                inputFiles.include("**/*.c")
+                inputFiles.exclude("**/alloc-override*.c", "**/page-queue.c", "**/static.c", "**/bitmap.inc.c")
+                headersDirs.setFrom("$srcRoot/c/include")
+            }
 
             onlyIf { targetSupportsMimallocAllocator(target.name) }
         }
 
-        module("libbacktrace") {
-            val srcRoot = file("src/libbacktrace")
-            val elfSize = when (target.architecture) {
-                TargetArchitecture.X64, TargetArchitecture.ARM64 -> 64
-                TargetArchitecture.X86, TargetArchitecture.ARM32,
-                TargetArchitecture.MIPS32, TargetArchitecture.MIPSEL32,
-                TargetArchitecture.WASM32 -> 32
+        customModule("libbacktrace") {
+            task.configure {
+                val srcRoot = file("src/libbacktrace")
+                val elfSize = when (target.architecture) {
+                    TargetArchitecture.X64, TargetArchitecture.ARM64 -> 64
+                    TargetArchitecture.X86, TargetArchitecture.ARM32,
+                    TargetArchitecture.MIPS32, TargetArchitecture.MIPSEL32,
+                    TargetArchitecture.WASM32 -> 32
+                }
+                val useMachO = target.family.isAppleFamily
+                val useElf = target.family in listOf(Family.LINUX, Family.ANDROID)
+                compiler.set("clang")
+                compilerArgs.set(listOfNotNull(
+                        "-std=gnu11",
+                        "-funwind-tables",
+                        "-W",
+                        "-Wall",
+                        "-Wwrite-strings",
+                        "-Wstrict-prototypes",
+                        "-Wmissing-prototypes",
+                        "-Wold-style-definition",
+                        "-Wmissing-format-attribute",
+                        "-Wcast-qual",
+                        "-O2",
+                        "-DBACKTRACE_ELF_SIZE=$elfSize".takeIf { useElf },
+                        "-Wno-atomic-alignment"
+                ))
+                inputFiles.from("$srcRoot/c")
+                inputFiles.include(listOfNotNull(
+                        "atomic.c",
+                        "backtrace.c",
+                        "dwarf.c",
+                        "elf.c".takeIf { useElf },
+                        "fileline.c",
+                        "macho.c".takeIf { useMachO },
+                        "mmap.c",
+                        "mmapio.c",
+                        "posix.c",
+                        "print.c",
+                        "simple.c",
+                        "sort.c",
+                        "state.c"
+                ))
+                headersDirs.setFrom("$srcRoot/c/include")
             }
-            val useMachO = target.family.isAppleFamily
-            val useElf = target.family in listOf(Family.LINUX, Family.ANDROID)
-            compiler.set("clang")
-            compilerArgs.set(listOfNotNull(
-                    "-std=gnu11",
-                    "-funwind-tables",
-                    "-W",
-                    "-Wall",
-                    "-Wwrite-strings",
-                    "-Wstrict-prototypes",
-                    "-Wmissing-prototypes",
-                    "-Wold-style-definition",
-                    "-Wmissing-format-attribute",
-                    "-Wcast-qual",
-                    "-O2",
-                    "-DBACKTRACE_ELF_SIZE=$elfSize".takeIf { useElf },
-                    "-Wno-atomic-alignment"
-            ))
-            inputFiles.from("$srcRoot/c")
-            inputFiles.include(listOfNotNull(
-                    "atomic.c",
-                    "backtrace.c",
-                    "dwarf.c",
-                    "elf.c".takeIf { useElf },
-                    "fileline.c",
-                    "macho.c".takeIf { useMachO },
-                    "mmap.c",
-                    "mmapio.c",
-                    "posix.c",
-                    "print.c",
-                    "simple.c",
-                    "sort.c",
-                    "state.c"
-            ))
-            headersDirs.setFrom("$srcRoot/c/include")
 
             onlyIf { targetSupportsLibBacktrace(target.name) }
         }
@@ -134,15 +138,19 @@ bitcode {
             headersDirs.from(files("src/main/cpp"))
         }
 
-        module("exceptionsSupport", file("src/exceptions_support")) {
+        module("exceptionsSupport") {
+            srcRoot.set(project.layout.projectDirectory.dir("src/exceptions_support"))
             headersDirs.from(files("src/main/cpp"))
         }
 
-        module("source_info_core_symbolication", file("src/source_info/core_symbolication")) {
+        module("source_info_core_symbolication") {
+            srcRoot.set(project.layout.projectDirectory.dir("src/source_info/core_symbolication"))
             headersDirs.from(files("src/main/cpp"))
             onlyIf { targetSupportsCoreSymbolication(target.name) }
         }
-        module("source_info_libbacktrace", file("src/source_info/libbacktrace")) {
+
+        module("source_info_libbacktrace") {
+            srcRoot.set(project.layout.projectDirectory.dir("src/source_info/libbacktrace"))
             headersDirs.from(files("src/main/cpp", "src/libbacktrace/c/include"))
             onlyIf { targetSupportsLibBacktrace(target.name) }
         }
@@ -155,38 +163,50 @@ bitcode {
             headersDirs.from(files("src/main/cpp"))
         }
 
-        module("profileRuntime", file("src/profile_runtime"))
+        module("profileRuntime") {
+            srcRoot.set(project.layout.projectDirectory.dir("src/profile_runtime"))
+        }
 
         module("objc") {
             headersDirs.from(files("src/main/cpp"))
         }
 
-        module("test_support", outputGroup = "test") {
+        module("test_support") {
+            outputGroup.set("test")
             headersDirs.from(files("src/main/cpp"), googletest.headersDirs)
-            dependsOn("downloadGoogleTest")
+            task.configure {
+                // TODO: Probably wrong to modify task here.
+                dependsOn("downloadGoogleTest")
+            }
         }
 
-        module("legacy_memory_manager", file("src/legacymm")) {
+        module("legacy_memory_manager") {
+            srcRoot.set(project.layout.projectDirectory.dir("src/legacymm"))
             headersDirs.from(files("src/main/cpp"))
         }
 
-        module("experimental_memory_manager", file("src/mm")) {
+        module("experimental_memory_manager") {
+            srcRoot.set(project.layout.projectDirectory.dir("src/mm"))
             headersDirs.from(files("src/gc/common/cpp", "src/main/cpp"))
         }
 
-        module("common_gc", file("src/gc/common")) {
+        module("common_gc") {
+            srcRoot.set(project.layout.projectDirectory.dir("src/gc/common"))
             headersDirs.from(files("src/mm/cpp", "src/main/cpp"))
         }
 
-        module("noop_gc", file("src/gc/noop")) {
+        module("noop_gc") {
+            srcRoot.set(project.layout.projectDirectory.dir("src/gc/noop"))
             headersDirs.from(files("src/gc/noop/cpp", "src/gc/common/cpp", "src/mm/cpp", "src/main/cpp"))
         }
 
-        module("same_thread_ms_gc", file("src/gc/stms")) {
+        module("same_thread_ms_gc") {
+            srcRoot.set(project.layout.projectDirectory.dir("src/gc/stms"))
             headersDirs.from(files("src/gc/stms/cpp", "src/gc/common/cpp", "src/mm/cpp", "src/main/cpp"))
         }
 
-        module("concurrent_ms_gc", file("src/gc/cms")) {
+        module("concurrent_ms_gc") {
+            srcRoot.set(project.layout.projectDirectory.dir("src/gc/cms"))
             headersDirs.from(files("src/gc/cms/cpp", "src/gc/common/cpp", "src/mm/cpp", "src/main/cpp"))
 
             onlyIf { targetSupportsThreads(target.name) }

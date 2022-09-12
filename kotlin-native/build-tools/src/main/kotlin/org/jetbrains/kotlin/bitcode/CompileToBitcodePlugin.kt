@@ -6,10 +6,7 @@
 package org.jetbrains.kotlin.bitcode
 
 import kotlinBuildProperties
-import org.gradle.api.Action
-import org.gradle.api.NamedDomainObjectSet
-import org.gradle.api.Plugin
-import org.gradle.api.Project
+import org.gradle.api.*
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
@@ -17,6 +14,8 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
+import org.gradle.api.specs.Spec
+import org.gradle.api.specs.Specs
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -114,16 +113,22 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
      */
     abstract class AbstractModule(
             val owner: Target,
-            val name: String,
-    ) {
+            private val name: String,
+    ) : Named {
         val target by owner::target
         val sanitizer by owner::sanitizer
         protected val project by owner.owner::project
         protected val objects by project::objects
 
+        private var enabled = Specs.satisfyAll<AbstractModule>()
+
         // TODO: Should this go away?
         val outputGroup = objects.property<String>().apply {
             convention("main")
+        }
+
+        fun onlyIf(spec: Spec<in AbstractModule>) {
+            enabled = Specs.intersect(enabled, spec)
         }
 
         /**
@@ -137,6 +142,9 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
                 }
                 description = "Compiles '$name' to bitcode for $target${sanitizer.description}"
                 dependsOn(":kotlin-native:dependencies:update") // TODO: really needs only the current target
+                this.onlyIf {
+                    this@AbstractModule.enabled.isSatisfiedBy(this@AbstractModule)
+                }
             }
         }
 
@@ -148,10 +156,16 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
         override fun hashCode(): Int {
             return name.hashCode()
         }
+
+        override fun getName(): String {
+            return name
+        }
     }
 
     /**
      * Configure a module for [target] with optional [sanitizer].
+     *
+     * Avoid manual configuration of [task]. If the compilation is custom, use [CustomModule] instead.
      *
      * @param owner owner of this module
      * @param name name of this module
@@ -159,6 +173,48 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
     open class Module @Inject constructor(
         owner: Target,
         name: String,
+    ) : AbstractModule(owner, name) {
+        // TODO: Should this go away?
+        val srcRoot = objects.directoryProperty().apply {
+            convention(project.layout.projectDirectory.dir("src/$name"))
+        }
+
+        // TODO: Should this go away?
+        val headersDirs = objects.fileCollection()
+
+        val outputFile = objects.fileProperty().apply {
+            convention(outputGroup.flatMap {
+                project.layout.buildDirectory.file("bitcode/$it/$target${sanitizer.dirSuffix}/$name.bc")
+            })
+        }
+
+        init {
+            task.configure {
+                this.moduleName.set(name)
+                this.outputFile.set(this@Module.outputFile)
+                this.outputDirectory.convention(moduleName.flatMap { project.layout.buildDirectory.dir("bitcode/${outputGroup.get()}/$target${sanitizer.dirSuffix}/$it") })
+                this.compiler.convention("clang++")
+                this.inputFiles.from(srcRoot.asFile.get().resolve("cpp"))
+                this.inputFiles.include("**/*.cpp", "**/*.mm")
+                this.inputFiles.exclude("**/*Test.cpp", "**/*TestSupport.cpp", "**/*Test.mm", "**/*TestSupport.mm")
+                this.headersDirs.from(this.inputFiles.dir)
+                this.headersDirs.from(this@Module.headersDirs)
+                this.compilerWorkingDirectory.set(project.layout.projectDirectory.dir("src"))
+            }
+        }
+    }
+
+    /**
+     * Configure a custom module for [target] with optional [sanitizer].
+     *
+     * Custom module preconfigures only the output destination, compilation flags, but not the inputs. Configure [task] by hand.
+     *
+     * @param owner owner of this module
+     * @param name name of this module
+     */
+    open class CustomModule @Inject constructor(
+            owner: Target,
+            name: String,
     ) : AbstractModule(owner, name) {
         // TODO: Should this go away?
         val srcRoot = objects.directoryProperty().apply {
@@ -241,36 +297,41 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
         val sanitizer by _sanitizer::orNull
         private val project by owner::project
         private val objects by project::objects
+        // No need to generate compdb entry for sanitizers.
+        private val compilationDatabase = sanitizer?.let {
+            owner.compilationDatabase.target(target)
+        }
 
-        private val modules = objects.namedDomainObjectSet<AbstractModule>(AbstractModule::class)
+        private val modules = objects.polymorphicDomainObjectContainer<AbstractModule>(AbstractModule::class).apply {
+            this.registerFactory(Module::class.java) {
+                objects.newInstance<Module>(this@Target, it)
+            }
+            this.registerFactory(CustomModule::class.java) {
+                objects.newInstance<CustomModule>(this@Target, it)
+            }
+        }
 
         private fun addToCompdb(compileTask: CompileToBitcode) {
-            // No need to generate compdb entry for sanitizers.
-            if (sanitizer != null) {
-                return
-            }
-            owner.compilationDatabase.target(target) {
-                entry {
-                    val args = listOf(owner.execClang.resolveExecutable(compileTask.compiler.get())) + compileTask.compilerFlags.get() + owner.execClang.clangArgsForCppRuntime(target.name)
-                    directory.set(compileTask.compilerWorkingDirectory)
-                    files.setFrom(compileTask.inputFiles)
-                    arguments.set(args)
-                    // Only the location of output file matters, compdb does not depend on the compilation result.
-                    output.set(compileTask.outputFile.locationOnly.map { it.asFile.absolutePath })
-                }
+            compilationDatabase?.entry {
+                val args = listOf(owner.execClang.resolveExecutable(compileTask.compiler.get())) + compileTask.compilerFlags.get() + owner.execClang.clangArgsForCppRuntime(target.name)
+                directory.set(compileTask.compilerWorkingDirectory)
+                files.setFrom(compileTask.inputFiles)
+                arguments.set(args)
+                // Only the location of output file matters, compdb does not depend on the compilation result.
+                output.set(compileTask.outputFile.locationOnly.map { it.asFile.absolutePath })
             }
         }
 
         /**
-         * Configure module named [name] for [target] with optional [sanitizer].
+         * Configure [Module] named [name] for [target] with optional [sanitizer].
          *
          * @param name module name; must be unique
          * @param action action to apply to the module
          *
-         * @throws IllegalArgumentException if a module named [name] already exists.
+         * @throws InvalidUserDataException if a module named [name] already exists.
          */
         fun module(name: String, action: Action<in Module>): Module {
-            val module = project.objects.newInstance<Module>(this, name).apply {
+            return modules.create<Module>(name) {
                 task.configure {
                     compilerArgs.set(owner.owner.DEFAULT_CPP_FLAGS)
                 }
@@ -278,15 +339,10 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
                 // TODO: Get rid of get()
                 addToCompdb(task.get())
             }
-            val added = modules.add(module)
-            require(added) {
-                "Module named $name already exists"
-            }
-            return module
         }
 
         /**
-         * Get module named [name] for [target] with optional [sanitizer].
+         * Get [Module] named [name] for [target] with optional [sanitizer].
          *
          * @param name module name
          *
@@ -295,17 +351,34 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
         fun module(name: String): Provider<Module> = modules.withType<Module>().named(name)
 
         /**
-         * Configure module for [target] with optional [sanitizer].
+         * Configure [CustomModule] named [name] for [target] with optional [sanitizer].
+         *
+         * Custom module preconfigures only the output destination, compilation flags, but not the inputs. Configure [CustomModule.task] by hand.
+         *
+         * @param name module name; must be unique
+         * @param action action to apply to the module
+         *
+         * @throws InvalidUserDataException if a module named [name] already exists.
          */
-        fun module(name: String, srcRoot: File = project.file("src/$name"), outputGroup: String = "main", configurationBlock: CompileToBitcode.() -> Unit = {}) {
-            module(name, action = {
-                this.outputGroup.set(outputGroup)
-                this.srcRoot.set(srcRoot)
-                this.task.configure {
-                    configurationBlock()
+        fun customModule(name: String, action: Action<in CustomModule>): CustomModule {
+            return modules.create<CustomModule>(name) {
+                task.configure {
+                    compilerArgs.set(owner.owner.DEFAULT_CPP_FLAGS)
                 }
-            })
+                action.execute(this)
+                // TODO: Get rid of get()
+                addToCompdb(task.get())
+            }
         }
+
+        /**
+         * Get [CustomModule] named [name] for [target] with optional [sanitizer].
+         *
+         * @param name module name
+         *
+         * @throws UnknownDomainObjectException if module named [name] is not found.
+         */
+        fun customModule(name: String): Provider<CustomModule> = modules.withType<CustomModule>().named(name)
 
         fun testsGroup(
                 testTaskName: String,

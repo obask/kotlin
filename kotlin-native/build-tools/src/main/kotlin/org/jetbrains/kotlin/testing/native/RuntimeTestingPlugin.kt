@@ -53,29 +53,35 @@ open class RuntimeTestingPlugin : Plugin<Project> {
         pluginManager.withPlugin("compile-to-bitcode") {
             val bitcodeExtension = project.extensions.getByType<CompileToBitcodeExtension>()
             bitcodeExtension.allTargets {
-                module("googletest", outputGroup = "test") {
-                    inputFiles.from(googleTestRoot.resolve("googletest/src"))
-                    inputFiles.include("*.cc")
-                    inputFiles.exclude("gtest-all.cc", "gtest_main.cc")
-                    headersDirs.from(
-                            googleTestRoot.resolve("googletest/include"),
-                            googleTestRoot.resolve("googletest")
-                    )
-                    compilerArgs.set(listOf("-std=c++17", "-O2"))
-                    dependsOn(dependencies)
+                customModule("googletest") {
+                    outputGroup.set("test")
+                    task.configure {
+                        inputFiles.from(googleTestRoot.resolve("googletest/src"))
+                        inputFiles.include("*.cc")
+                        inputFiles.exclude("gtest-all.cc", "gtest_main.cc")
+                        headersDirs.from(
+                                googleTestRoot.resolve("googletest/include"),
+                                googleTestRoot.resolve("googletest")
+                        )
+                        compilerArgs.set(listOf("-std=c++17", "-O2"))
+                        dependsOn(dependencies)
+                    }
                 }
 
-                module("googlemock", outputGroup = "test") {
-                    inputFiles.from(googleTestRoot.resolve("googlemock/src"))
-                    inputFiles.include("*.cc")
-                    inputFiles.exclude("gmock-all.cc", "gmock_main.cc")
-                    headersDirs.from(
-                            googleTestRoot.resolve("googlemock"),
-                            googleTestRoot.resolve("googlemock/include"),
-                            googleTestRoot.resolve("googletest/include"),
-                    )
-                    compilerArgs.set(listOf("-std=c++17", "-O2"))
-                    dependsOn(dependencies)
+                customModule("googlemock") {
+                    outputGroup.set("test")
+                    task.configure {
+                        inputFiles.from(googleTestRoot.resolve("googlemock/src"))
+                        inputFiles.include("*.cc")
+                        inputFiles.exclude("gmock-all.cc", "gmock_main.cc")
+                        headersDirs.from(
+                                googleTestRoot.resolve("googlemock"),
+                                googleTestRoot.resolve("googlemock/include"),
+                                googleTestRoot.resolve("googletest/include"),
+                        )
+                        compilerArgs.set(listOf("-std=c++17", "-O2"))
+                        dependsOn(dependencies)
+                    }
                 }
             }
         }
