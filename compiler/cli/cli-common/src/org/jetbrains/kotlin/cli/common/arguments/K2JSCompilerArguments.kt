@@ -102,7 +102,6 @@ class K2JSCompilerArguments : CommonCompilerArguments() {
 
     @Argument(
         value = "-Xir-keep",
-        valueDescription = "<path>",
         description = "Comma-separated list of fully-qualified names to not be eliminated by DCE (if it can be reached), " +
                 "and for which to keep non-minified names."
     )
