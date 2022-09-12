@@ -216,21 +216,12 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
             owner: Target,
             name: String,
     ) : AbstractModule(owner, name) {
-        // TODO: Should this go away?
-        val srcRoot = objects.directoryProperty().apply {
-            convention(project.layout.projectDirectory.dir("src/$name"))
-        }
-
         init {
             task.configure {
                 this.moduleName.set(name)
                 this.outputFile.convention(moduleName.flatMap { project.layout.buildDirectory.file("bitcode/${outputGroup.get()}/$target${sanitizer.dirSuffix}/$it.bc") })
                 this.outputDirectory.convention(moduleName.flatMap { project.layout.buildDirectory.dir("bitcode/${outputGroup.get()}/$target${sanitizer.dirSuffix}/$it") })
                 this.compiler.convention("clang++")
-                this.inputFiles.from(srcRoot.asFile.get().resolve("cpp"))
-                this.inputFiles.include("**/*.cpp", "**/*.mm")
-                this.inputFiles.exclude("**/*Test.cpp", "**/*TestSupport.cpp", "**/*Test.mm", "**/*TestSupport.mm")
-                this.headersDirs.from(this.inputFiles.dir)
                 this.compilerWorkingDirectory.set(project.layout.projectDirectory.dir("src"))
             }
         }
