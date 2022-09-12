@@ -3,7 +3,7 @@
 // INFER_MAIN_MODULE
 // KEEP: A.B
 
-// MODULE: keep_top_level_fun
+// MODULE: keep_nested_class
 // FILE: lib.kt
 
 class A {
@@ -27,7 +27,7 @@ fun bar(): A.B {
 
 // FILE: test.js
 function box() {
-    var b = this["keep_top_level_fun"].bar()
+    var b = this["keep_nested_class"].bar()
 
     if (b.baz_232z_k$() != "baz") return "fail 1"
 

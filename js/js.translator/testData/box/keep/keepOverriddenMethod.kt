@@ -3,7 +3,7 @@
 // INFER_MAIN_MODULE
 // KEEP: A.foo
 
-// MODULE: keep_top_level_fun
+// MODULE: keep_overridden_method
 // FILE: lib.kt
 
 open class A {
@@ -29,7 +29,7 @@ fun bar(): B {
 
 // FILE: test.js
 function box() {
-    var b = this["keep_top_level_fun"].bar()
+    var b = this["keep_overridden_method"].bar()
 
     if (b.foo_26di_k$() != "foo!") return "fail 1"
 

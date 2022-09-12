@@ -3,7 +3,7 @@
 // INFER_MAIN_MODULE
 // KEEP: A.foo
 
-// MODULE: keep_top_level_fun
+// MODULE: keep_method
 // FILE: lib.kt
 
 class A {
@@ -23,7 +23,7 @@ fun bar(): A {
 
 // FILE: test.js
 function box() {
-    var a = this["keep_top_level_fun"].bar()
+    var a = this["keep_method"].bar()
 
     if (a.foo_26di_k$() != "foo") return "fail 1"
 

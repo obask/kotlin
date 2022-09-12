@@ -7297,6 +7297,12 @@ public class FirJsTestGenerated extends AbstractFirJsTest {
         }
 
         @Test
+        @TestMetadata("keepNestedClassIfKeptTopLevelClass.kt")
+        public void testKeepNestedClassIfKeptTopLevelClass() throws Exception {
+            runTest("js/js.translator/testData/box/keep/keepNestedClassIfKeptTopLevelClass.kt");
+        }
+
+        @Test
         @TestMetadata("keepOverriddenMethod.kt")
         public void testKeepOverriddenMethod() throws Exception {
             runTest("js/js.translator/testData/box/keep/keepOverriddenMethod.kt");

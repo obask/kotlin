@@ -21,6 +21,14 @@ class Keeper(private val keep: Set<String>) : IrElementVisitor<Unit, Keeper.Keep
         element.acceptChildren(this, data)
     }
 
+    /** Keep declarations can work both ways
+     * if member of a class is in keep, the class should be also kept
+     * if a class is kept, members of the class should be also kept
+     * but there can be nested classes, and for nested classes we need only to propagate "keep" from top-level to nested (not vice versa)
+     * because we have 2 directions, we need 2 boolean flags
+     * [KeepData.classInKeep] responsible to propagate "keep" from class level to members direction
+     * [KeepData.classShouldBeKept] responsible to bubble "keep" from members to class level direction
+     */
     override fun visitClass(declaration: IrClass, data: KeepData) {
         val prevShouldBeKept = data.classShouldBeKept
         val prevClassInKeep = data.classInKeep
