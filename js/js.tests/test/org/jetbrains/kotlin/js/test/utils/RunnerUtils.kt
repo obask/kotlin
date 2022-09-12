@@ -253,7 +253,10 @@ fun extractEntryModulePath(
                 files
                     .find { it.isMjsFile && JsEnvironmentConfigurationDirectives.ENTRY_ES_MODULE in it.directives }
                     ?.let {
-                        File(JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices), getNameFor(it, testServices)).absolutePath
+                        File(
+                            JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices, mode),
+                            getNameFor(it, testServices)
+                        ).absolutePath
                     }
             }
 

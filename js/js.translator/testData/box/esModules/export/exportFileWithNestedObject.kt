@@ -48,11 +48,11 @@ object MyObject {
 
 // FILE: main.mjs
 // ENTRY_ES_MODULE
-import { Foo, Abc, MyEnum, MyObject } from "./main.mjs"
+import { Foo, Abc, MyEnum, getMyObject } from "./exportFileWithNestedObject-nestedObjectExport_v5.mjs"
 
-function box() {
-    if (Abc.Companion.xyz() != 'Companion object method OK') return 'companion object function failure';
-    if (Abc.Companion.prop != 'Companion object property OK') return 'companion object property failure';
+export function box() {
+    if (Abc.AbcCompanion.xyz() != 'Companion object method OK') return 'companion object function failure';
+    if (Abc.AbcCompanion.prop != 'Companion object property OK') return 'companion object property failure';
 
     if (Foo.Companion.xyz() != 'Companion object method OK') return 'companion object function failure';
     if (Foo.Companion.prop != 'Companion object property OK') return 'companion object property failure';
@@ -61,9 +61,9 @@ function box() {
     if (MyEnum.B.name != 'B') return 'MyEnum.B failure';
     if (MyEnum.C.name != 'C') return 'MyEnum.C failure';
 
-    if (MyObject.A.valueA() != "OK") return 'MyObject.A failure';
-    if (MyObject.B.valueB() != "OK") return 'MyObject.B failure';
-    if (MyObject.C.valueC() != "OK") return 'MyObject.C failure';
+    if (getMyObject().A.valueA() != "OK") return 'MyObject.A failure';
+    if (getMyObject().B.valueB() != "OK") return 'MyObject.B failure';
+    if (getMyObject().C.valueC() != "OK") return 'MyObject.C failure';
 
     return 'OK';
 }

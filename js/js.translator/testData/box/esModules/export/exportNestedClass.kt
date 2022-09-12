@@ -38,10 +38,11 @@ object MyObject {
 
 // FILE: main.mjs
 // ENTRY_ES_MODULE
-import  { B, MyObject } from "./exportNestedClass-export_nested_class_v5.mjs"
+import  { B, getMyObject } from "./exportNestedClass-export_nested_class_v5.mjs"
 
 export function box() {
     if (new B.Foo().bar("K") != "OK") return "fail 1";
+    const MyObject = getMyObject()
     if (new MyObject.A().valueA() != "OK") return "fail 2";
     if (new MyObject.B().valueB() != "OK") return "fail 3";
     if (new MyObject.C().valueC() != "OK") return "fail 4";

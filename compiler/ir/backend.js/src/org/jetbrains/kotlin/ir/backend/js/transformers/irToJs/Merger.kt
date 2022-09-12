@@ -140,12 +140,13 @@ class Merger(
             val allExportRelatedStatements = fragments.flatMap { it.exports.statements }
             val (allExportStatements, restStatements) = allExportRelatedStatements.partitionIsInstance<JsStatement, JsExport>()
             val (currentModuleExportStatements, restExportStatements) = allExportStatements.partition { it.fromModule == null }
-            val oneLargeExportStatement =  currentModuleExportStatements.takeIf { it.isNotEmpty() }
-                ?.reduce { acc, it ->
-                    val accSubject = acc.subject as JsExport.Subject.Elements
-                    val itSubject = it.subject as JsExport.Subject.Elements
-                    JsExport(JsExport.Subject.Elements(accSubject.elements + itSubject.elements))
-                }
+            val exportedElements = currentModuleExportStatements.takeIf { it.isNotEmpty() }
+                ?.asSequence()
+                ?.flatMap { (it.subject as JsExport.Subject.Elements).elements }
+                ?.distinctBy { (it.alias ?: it.name).ident }
+                ?.toList()
+
+            val oneLargeExportStatement = exportedElements?.let { JsExport(JsExport.Subject.Elements(it)) }
 
             return restStatements + listOfNotNull(oneLargeExportStatement) + restExportStatements
         } else {

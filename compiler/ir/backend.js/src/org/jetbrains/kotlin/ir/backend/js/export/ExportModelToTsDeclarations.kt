@@ -15,11 +15,11 @@ import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.js.common.isValidES5Identifier
 import org.jetbrains.kotlin.serialization.js.ModuleKind
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstance
-import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstanceOrNull
-import javax.lang.model.type.IntersectionType
+import org.jetbrains.kotlin.utils.addToStdlib.runIf
 
 private const val Nullable = "Nullable"
 private const val objects = "_objects_"
+private const val NonExistent = "__NonExistent"
 private const val syntheticObjectNameSeparator = '$'
 
 fun ExportedModule.toTypeScript(): String {
@@ -61,7 +61,8 @@ class ExportModelToTsDeclarations {
         return joinToString("\n") {
             it.toTypeScript(
                 indent = moduleKind.indent,
-                prefix = if (moduleKind == ModuleKind.PLAIN) "" else "export "
+                prefix = if (moduleKind == ModuleKind.PLAIN) "" else "export ",
+                esModules = moduleKind == ModuleKind.ES
             )
         } + generateObjectsNamespaceIfNeeded(moduleKind.indent)
     }
@@ -77,15 +78,15 @@ class ExportModelToTsDeclarations {
     private fun List<ExportedDeclaration>.toTypeScript(indent: String): String =
         joinToString("") { it.toTypeScript(indent) + "\n" }
 
-    private fun ExportedDeclaration.toTypeScript(indent: String, prefix: String = ""): String =
+    private fun ExportedDeclaration.toTypeScript(indent: String, prefix: String = "", esModules: Boolean = false): String =
         indent + when (this) {
             is ErrorDeclaration -> generateTypeScriptString()
             is ExportedNamespace -> generateTypeScriptString(indent, prefix)
             is ExportedFunction -> generateTypeScriptString(indent, prefix)
             is ExportedConstructor -> generateTypeScriptString(indent)
             is ExportedConstructSignature -> generateTypeScriptString(indent)
-            is ExportedProperty -> generateTypeScriptString(indent, prefix)
-            is ExportedObject -> generateTypeScriptString(indent, prefix)
+            is ExportedProperty -> generateTypeScriptString(indent, prefix, esModules)
+            is ExportedObject -> generateTypeScriptString(indent, prefix, esModules)
             is ExportedRegularClass -> generateTypeScriptString(indent, prefix)
         }
 
@@ -107,34 +108,38 @@ class ExportModelToTsDeclarations {
         return "new($renderedParameters): ${returnType.toTypeScript(indent)};"
     }
 
-    private fun ExportedProperty.generateTypeScriptString(indent: String, prefix: String): String {
-        val visibility = if (isProtected) "protected " else ""
-        val keyword = when {
-            isMember -> (if (isAbstract) "abstract " else "")
-            else -> if (mutable) "let " else "const "
-        }
-        val possibleStatic = if (isMember && isStatic) "static " else ""
-        val containsUnresolvedChar = !name.isValidES5Identifier()
-        val memberName = when {
-            isMember && containsUnresolvedChar -> "\"$name\""
-            else -> name
-        }
+    private fun ExportedProperty.generateTypeScriptString(indent: String, prefix: String, esModules: Boolean): String {
+        val optional = if (isOptional) "?" else ""
         val typeToTypeScript = type.toTypeScript(indent)
+        val containsUnresolvedChar = !name.isValidES5Identifier()
+        val memberName = if (containsUnresolvedChar) "\"$name\"" else name
 
-        return if (isMember && !isField) {
-            val getter = "$prefix$visibility$possibleStatic${keyword}get $memberName(): $typeToTypeScript;"
-            if (!mutable) {
-                getter
+        return if (isMember) {
+            val static = if (isStatic) "static " else ""
+            val abstract = if (isAbstract) "abstract " else ""
+            val visibility = if (isProtected) "protected " else ""
+
+            if (isField) {
+                val readonly = if (!mutable) "readonly " else ""
+                "$prefix$visibility$static$abstract$readonly$memberName$optional: $typeToTypeScript;"
             } else {
-                getter + "\n" + "$indent$prefix$visibility$possibleStatic${keyword}set $memberName(value: $typeToTypeScript);"
+                val getter = "$prefix$visibility$static${abstract}get $memberName(): $typeToTypeScript;"
+                val setter = runIf(mutable) { "\n$indent$prefix$visibility$static${abstract}set $memberName(value: $typeToTypeScript);" }
+                getter + setter.orEmpty()
             }
         } else {
-            if (!isMember && containsUnresolvedChar) {
-                ""
-            } else {
-                val readonly = if (isMember && !mutable) "readonly " else ""
-                val optional = if (isOptional) "?" else ""
-                "$prefix$visibility$possibleStatic$keyword$readonly$memberName$optional: $typeToTypeScript;"
+            when {
+                containsUnresolvedChar -> ""
+                esModules -> {
+                    val getter = "${prefix}function ${name.getterName}: $typeToTypeScript;"
+                    val setter = runIf(mutable) { "\n${prefix}function ${name.setterName}(value: $typeToTypeScript): void;" }
+                    getter + setter.orEmpty()
+                }
+
+                else -> {
+                    val keyword = if (mutable) "let " else "const "
+                    "$prefix$keyword$memberName$optional: $typeToTypeScript;"
+                }
             }
         }
     }
@@ -175,7 +180,7 @@ class ExportModelToTsDeclarations {
         }
     }
 
-    private fun ExportedObject.generateTypeScriptString(indent: String, prefix: String): String {
+    private fun ExportedObject.generateTypeScriptString(indent: String, prefix: String, esModules: Boolean): String {
         val shouldRenderSeparatedAbstractClass = !couldBeProperty()
 
         var t: ExportedType = ExportedType.InlineInterfaceType(members)
@@ -208,13 +213,14 @@ class ExportModelToTsDeclarations {
         )
 
         return if (!shouldRenderSeparatedAbstractClass) {
-            property.generateTypeScriptString(indent, prefix)
+            property.generateTypeScriptString(indent, prefix, esModules)
         } else {
+            val className = NonExistent.takeIf { esModules }.orEmpty() + name
             val propertyRef = "$objects.$propertyName"
             val shouldCreateExtraProperty = members.isNotEmpty() || superInterfaces.isNotEmpty() || superClasses.isNotEmpty()
             val newSuperClass = ExportedType.ClassType(propertyRef, emptyList(), ir).takeIf { shouldCreateExtraProperty }
-            ExportedRegularClass(
-                name = name,
+            val renderedClass = ExportedRegularClass(
+                name = className,
                 isInterface = false,
                 isAbstract = true,
                 superClasses = listOfNotNull(newSuperClass),
@@ -226,6 +232,18 @@ class ExportModelToTsDeclarations {
             )
                 .generateTypeScriptString(indent, prefix)
                 .also { if (shouldCreateExtraProperty) objectsSyntheticProperties.add(property) }
+
+            if (esModules && !property.isMember) {
+                ExportedFunction(
+                    name = property.name.getterName,
+                    returnType = ExportedType.TypeOf(className),
+                    parameters = emptyList(),
+                    isProtected = false,
+                    ir = irGetter
+                ).generateTypeScriptString(indent, prefix) + "\n$renderedClass"
+            } else {
+                renderedClass
+            }
         }
     }
 

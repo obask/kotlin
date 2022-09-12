@@ -32,7 +32,7 @@ Foo.prototype.k = function() {
 
 // FILE: entry.mjs
 // ENTRY_ES_MODULE
-import { Baz } from "./overridenExternalMethodWithSameStableNameMethod-overriden_external_method_with_same_stable_name_method_v5.mjs";
+import { Baz } from "./overriddenExternalMethodWithSameStableNameMethod-overriden_external_method_with_same_stable_name_method_v5.mjs";
 
 export function box() {
     const foo = new Baz()
