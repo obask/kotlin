@@ -247,7 +247,7 @@ abstract class AbstractKotlinCompile<T : CommonCompilerArguments> @Inject constr
 
     // avoid creating directory in getter: this can lead to failure in parallel build
     @get:OutputDirectory
-    internal open val taskBuildCacheableOutputDirectory: DirectoryProperty = objectFactory.directoryProperty()
+    internal val taskBuildCacheableOutputDirectory: DirectoryProperty = objectFactory.directoryProperty()
 
     // avoid creating directory in getter: this can lead to failure in parallel build
     @get:LocalState
@@ -878,7 +878,7 @@ abstract class KotlinCompile @Inject constructor(
 @CacheableTask
 abstract class Kotlin2JsCompile @Inject constructor(
     override val kotlinOptions: KotlinJsOptions,
-    private val objectFactory: ObjectFactory,
+    objectFactory: ObjectFactory,
     workerExecutor: WorkerExecutor
 ) : AbstractKotlinCompile<K2JSCompilerArguments>(objectFactory, workerExecutor),
     KotlinJsCompile {
@@ -930,10 +930,6 @@ abstract class Kotlin2JsCompile @Inject constructor(
 
     @get:Input
     abstract val outputName: Property<String>
-
-    @get:OutputFiles
-    val outputFiles: FileTree
-        get() = objectFactory.fileTree().from(destinationDirectory)
 
     override fun createCompilerArgs(): K2JSCompilerArguments =
         K2JSCompilerArguments()
