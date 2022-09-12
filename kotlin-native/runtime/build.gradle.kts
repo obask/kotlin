@@ -43,6 +43,7 @@ bitcode {
             if (sanitizer == null) {
                 outputFile.set(layout.buildDirectory.file("bitcode/main/$target/runtime.bc"))
             }
+            test {}
         }
 
         customModule("mimalloc") {
@@ -188,11 +189,13 @@ bitcode {
         module("experimental_memory_manager") {
             srcRoot.set(project.layout.projectDirectory.dir("src/mm"))
             headersDirs.from(files("src/gc/common/cpp", "src/main/cpp"))
+            test {}
         }
 
         module("common_gc") {
             srcRoot.set(project.layout.projectDirectory.dir("src/gc/common"))
             headersDirs.from(files("src/mm/cpp", "src/main/cpp"))
+            test {}
         }
 
         module("noop_gc") {
@@ -203,6 +206,7 @@ bitcode {
         module("same_thread_ms_gc") {
             srcRoot.set(project.layout.projectDirectory.dir("src/gc/stms"))
             headersDirs.from(files("src/gc/stms/cpp", "src/gc/common/cpp", "src/mm/cpp", "src/main/cpp"))
+            test {}
         }
 
         module("concurrent_ms_gc") {
@@ -210,6 +214,8 @@ bitcode {
             headersDirs.from(files("src/gc/cms/cpp", "src/gc/common/cpp", "src/mm/cpp", "src/main/cpp"))
 
             onlyIf { targetSupportsThreads(target.name) }
+
+            test {}
         }
 
         testsGroup("std_alloc_runtime_tests") {

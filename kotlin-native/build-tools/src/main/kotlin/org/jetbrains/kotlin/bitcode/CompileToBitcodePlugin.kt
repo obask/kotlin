@@ -64,6 +64,18 @@ private val KonanTarget.executableExtension
         else -> ""
     }
 
+private fun CompilationDatabaseExtension.Target.entry(execClang: ExecClang, compileTask: Provider<CompileToBitcode>) {
+    entry {
+        val task = compileTask.get()
+        val args = listOf(execClang.resolveExecutable(task.compiler.get())) + task.compilerFlags.get() + execClang.clangArgsForCppRuntime(target.name)
+        directory.set(task.compilerWorkingDirectory)
+        files.setFrom(task.inputFiles)
+        arguments.set(args)
+        // Only the location of output file matters, compdb does not depend on the compilation result.
+        output.set(task.outputFile.locationOnly.map { it.asFile.absolutePath })
+    }
+}
+
 private abstract class RunGTestSemaphore : BuildService<BuildServiceParameters.None>
 private abstract class CompileTestsSemaphore : BuildService<BuildServiceParameters.None>
 
@@ -119,6 +131,10 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
         val sanitizer by owner::sanitizer
         protected val project by owner.owner::project
         protected val objects by project::objects
+        // No need to generate compdb entry for sanitizers.
+        protected val compilationDatabase = sanitizer?.let {
+            owner.owner.compilationDatabase.target(target)
+        }
 
         private var enabled = Specs.satisfyAll<AbstractModule>()
 
@@ -145,7 +161,9 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
                 this.onlyIf {
                     this@AbstractModule.enabled.isSatisfiedBy(this@AbstractModule)
                 }
+                this.moduleName.set(name)
             }
+            compilationDatabase?.entry(owner.owner.execClang, this)
         }
 
         override fun equals(other: Any?): Boolean {
@@ -174,6 +192,39 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
         owner: Target,
         name: String,
     ) : AbstractModule(owner, name) {
+        open class Test @Inject constructor(
+                val owner: Module,
+        ) {
+            val target by owner::target
+            val sanitizer by owner::sanitizer
+            private val project by owner::project
+
+            val task = project.tasks.register<CompileToBitcode>(fullTaskName("${owner.name}TestBitcode", target.name, sanitizer), target, sanitizer.asMaybe).apply {
+                configure {
+                    val it = owner.task.get()
+                    this.moduleName.set(it.moduleName)
+                    this.outputFile.convention(moduleName.flatMap { project.layout.buildDirectory.file("bitcode/test/$target${sanitizer.dirSuffix}/${it}Tests.bc") })
+                    this.outputDirectory.convention(moduleName.flatMap { project.layout.buildDirectory.dir("bitcode/test/$target${sanitizer.dirSuffix}/${it}Tests") })
+                    this.compiler.convention("clang++")
+                    this.compilerArgs.set(it.compilerArgs)
+                    this.inputFiles.from(it.inputFiles.dir)
+                    this.inputFiles.include("**/*Test.cpp", "**/*TestSupport.cpp", "**/*Test.mm", "**/*TestSupport.mm")
+                    this.headersDirs.setFrom(it.headersDirs)
+                    this.headersDirs.from(owner.owner.owner.googleTestExtension.headersDirs)
+                    this.compilerWorkingDirectory.set(it.compilerWorkingDirectory)
+                    this.group = org.jetbrains.kotlin.bitcode.CompileToBitcodeExtension.VERIFICATION_BUILD_TASK_GROUP
+                    this.description = "Compiles '${it.name}' tests to bitcode for $target${sanitizer.description}"
+
+                    dependsOn(":kotlin-native:dependencies:update")
+                    dependsOn("downloadGoogleTest")
+                }
+
+                owner.compilationDatabase?.entry(owner.owner.owner.execClang, this)
+            }
+        }
+
+        private var _test: Test? = null
+
         // TODO: Should this go away?
         val srcRoot = objects.directoryProperty().apply {
             convention(project.layout.projectDirectory.dir("src/$name"))
@@ -188,9 +239,22 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
             })
         }
 
+        fun test(action: Action<in Test>): Test {
+            require(_test == null) {
+                "Test was already created"
+            }
+            val result = objects.newInstance<Test>(this).apply {
+                action.execute(this)
+            }
+            _test = result
+            return result
+        }
+
+        val test: Provider<Test>
+            get() = project.provider { _test }
+
         init {
             task.configure {
-                this.moduleName.set(name)
                 this.outputFile.set(this@Module.outputFile)
                 this.outputDirectory.convention(moduleName.flatMap { project.layout.buildDirectory.dir("bitcode/${outputGroup.get()}/$target${sanitizer.dirSuffix}/$it") })
                 this.compiler.convention("clang++")
@@ -218,7 +282,6 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
     ) : AbstractModule(owner, name) {
         init {
             task.configure {
-                this.moduleName.set(name)
                 this.outputFile.convention(moduleName.flatMap { project.layout.buildDirectory.file("bitcode/${outputGroup.get()}/$target${sanitizer.dirSuffix}/$it.bc") })
                 this.outputDirectory.convention(moduleName.flatMap { project.layout.buildDirectory.dir("bitcode/${outputGroup.get()}/$target${sanitizer.dirSuffix}/$it") })
                 this.compiler.convention("clang++")
@@ -288,10 +351,6 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
         val sanitizer by _sanitizer::orNull
         private val project by owner::project
         private val objects by project::objects
-        // No need to generate compdb entry for sanitizers.
-        private val compilationDatabase = sanitizer?.let {
-            owner.compilationDatabase.target(target)
-        }
 
         private val modules = objects.polymorphicDomainObjectContainer<AbstractModule>(AbstractModule::class).apply {
             this.registerFactory(Module::class.java) {
@@ -299,17 +358,6 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
             }
             this.registerFactory(CustomModule::class.java) {
                 objects.newInstance<CustomModule>(this@Target, it)
-            }
-        }
-
-        private fun addToCompdb(compileTask: CompileToBitcode) {
-            compilationDatabase?.entry {
-                val args = listOf(owner.execClang.resolveExecutable(compileTask.compiler.get())) + compileTask.compilerFlags.get() + owner.execClang.clangArgsForCppRuntime(target.name)
-                directory.set(compileTask.compilerWorkingDirectory)
-                files.setFrom(compileTask.inputFiles)
-                arguments.set(args)
-                // Only the location of output file matters, compdb does not depend on the compilation result.
-                output.set(compileTask.outputFile.locationOnly.map { it.asFile.absolutePath })
             }
         }
 
@@ -327,8 +375,6 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
                     compilerArgs.set(owner.owner.DEFAULT_CPP_FLAGS)
                 }
                 action.execute(this)
-                // TODO: Get rid of get()
-                addToCompdb(task.get())
             }
         }
 
@@ -357,8 +403,6 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
                     compilerArgs.set(owner.owner.DEFAULT_CPP_FLAGS)
                 }
                 action.execute(this)
-                // TODO: Get rid of get()
-                addToCompdb(task.get())
             }
         }
 
@@ -388,29 +432,7 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
                 project.tasks.getByName(name) as CompileToBitcode
             }
             val compileToBitcodeTasks = testedTasks.mapNotNull {
-                val name = "${it.name}TestBitcode"
-                val task = project.tasks.findByName(name) as? CompileToBitcode
-                        ?: project.tasks.create(name, CompileToBitcode::class.java, it.target, it.sanitizer.asMaybe).apply {
-                            this.moduleName.set(it.moduleName)
-                            this.outputFile.convention(moduleName.flatMap { project.layout.buildDirectory.file("bitcode/test/$target${sanitizer.dirSuffix}/${it}Tests.bc") })
-                            this.outputDirectory.convention(moduleName.flatMap { project.layout.buildDirectory.dir("bitcode/test/$target${sanitizer.dirSuffix}/${it}Tests") })
-                            this.compiler.convention("clang++")
-                            this.compilerArgs.set(it.compilerArgs)
-                            this.inputFiles.from(it.inputFiles.dir)
-                            this.inputFiles.include("**/*Test.cpp", "**/*TestSupport.cpp", "**/*Test.mm", "**/*TestSupport.mm")
-                            this.headersDirs.setFrom(it.headersDirs)
-                            this.headersDirs.from(owner.googleTestExtension.headersDirs)
-                            this.compilerWorkingDirectory.set(it.compilerWorkingDirectory)
-                            this.group = VERIFICATION_BUILD_TASK_GROUP
-                            this.description = "Compiles '${it.name}' tests to bitcode for $target${sanitizer.description}"
-
-                            dependsOn(":kotlin-native:dependencies:update")
-                            dependsOn("downloadGoogleTest")
-
-                            addToCompdb(this)
-                        }
-                if (task.inputFiles.count() == 0) null
-                else task
+                project.tasks.findByName(fullTaskName("${it.moduleName.get()}TestBitcode", target.name, sanitizer)) as CompileToBitcode?
             }
             val testFrameworkTasks = testsGroup.testSupportModules.get().map {
                 val name = fullTaskName(it, target.name, sanitizer)
