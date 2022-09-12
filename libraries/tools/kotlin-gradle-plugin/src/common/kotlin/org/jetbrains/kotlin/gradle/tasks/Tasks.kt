@@ -868,7 +868,6 @@ abstract class KotlinCompile @Inject constructor(
                 !classpathSnapshotFiles.shrunkPreviousClasspathSnapshotFile.exists() -> {
                     NotAvailableDueToMissingClasspathSnapshot(classpathSnapshotFiles)
                 }
-
                 inputChanges.getFileChanges(classpathSnapshotProperties.classpathSnapshot).none() -> NoChanges(classpathSnapshotFiles)
                 else -> ToBeComputedByIncrementalCompiler(classpathSnapshotFiles)
             }
@@ -910,21 +909,18 @@ abstract class Kotlin2JsCompile @Inject constructor(
             "-Xir-produce-js" in kotlinOptions.freeCompilerArgs -> {
                 false
             }
-
             "-Xir-produce-klib-dir" in kotlinOptions.freeCompilerArgs -> {
                 KotlinBuildStatsService.applyIfInitialised {
                     it.report(BooleanMetrics.JS_KLIB_INCREMENTAL, incrementalJsKlib)
                 }
                 incrementalJsKlib
             }
-
             "-Xir-produce-klib-file" in kotlinOptions.freeCompilerArgs -> {
                 KotlinBuildStatsService.applyIfInitialised {
                     it.report(BooleanMetrics.JS_KLIB_INCREMENTAL, incrementalJsKlib)
                 }
                 incrementalJsKlib
             }
-
             else -> incremental
         }
 
@@ -936,10 +932,8 @@ abstract class Kotlin2JsCompile @Inject constructor(
     abstract val outputName: Property<String>
 
     @get:OutputFiles
-    val outputFiles: FileCollection
-        get() = objectFactory.fileCollection().from(
-            { destinationDirectory.asFileTree.files }
-        )
+    val outputFiles: FileTree
+        get() = objectFactory.fileTree().from(destinationDirectory)
 
     override fun createCompilerArgs(): K2JSCompilerArguments =
         K2JSCompilerArguments()
