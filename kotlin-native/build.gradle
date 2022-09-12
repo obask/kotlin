@@ -29,6 +29,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.jetbrains.kotlin.UtilsKt
 import java.util.concurrent.ConcurrentHashMap
+import plugins.KotlinBuildPublishingPluginKt
 
 buildscript {
     apply from: "gradle/kotlinGradlePlugin.gradle"
@@ -179,6 +180,7 @@ dependencies {
 }
 
 apply plugin: CompilationDatabasePlugin
+apply plugin: 'maven-publish'
 
 //task sharedJar {
 //    dependsOn gradle.includedBuild('shared').task(':jar')
@@ -784,4 +786,50 @@ task "checkStdlibAbiCompatibility"(type: CompareDistributionSignatures) {
         oldDistribution = project.findProperty("anotherDistro")
     }
     onMismatchMode = CompareDistributionSignatures.OnMismatchMode.FAIL
+}
+
+
+KotlinBuildPublishingPluginKt.configureDefaultPublishing(
+        /* receiver = */        project,
+        /* signingRequired = */ KotlinBuildPublishingPluginKt.getSignLibraryPublication(project)
+)
+
+publishing {
+    publications {
+        def fileExt = (isWindows()) ? 'zip' : 'tar.gz'
+        def simpleOsName = HostManager.platformName()
+
+        create("Bundle", MavenPublication) { mvn ->
+            mvn.artifact(bundleRegular) {
+                groupId = project.group.toString()
+                artifactId = project.name
+                version = konanVersionFull
+
+                classifier = simpleOsName
+                extension = fileExt
+                KotlinBuildPublishingPluginKt.configureKotlinPomAttributes(
+                        /* receiver = */  mvn,
+                        /* project = */   project,
+                        /* explicitDescription = */ "Kotlin/Native bundle",
+                        /* packaging = */ fileExt
+                )
+            }
+        }
+        create("BundlePrebuilt", MavenPublication) { mvn ->
+            mvn.artifact(bundlePrebuilt) {
+                groupId = project.group.toString()
+                artifactId = project.name + "-prebuilt"
+                version = konanVersionFull
+
+                classifier = "prebuilt-$simpleOsName"
+                extension = fileExt
+                KotlinBuildPublishingPluginKt.configureKotlinPomAttributes(
+                        /* receiver = */  mvn,
+                        /* project = */   project,
+                        /* explicitDescription = */ "Kotlin/Native bundle (prebuilt platform libs)",
+                        /* packaging = */ fileExt
+                )
+            }
+        }
+    }
 }
