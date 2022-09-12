@@ -129,7 +129,16 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
         /**
          * Gradle task that produces linked module [name] for [target] with optional [sanitizer].
          */
-        abstract val task: TaskProvider<CompileToBitcode>
+        val task: TaskProvider<CompileToBitcode> = project.tasks.register<CompileToBitcode>(fullTaskName(name, target.name, sanitizer), target, sanitizer.asMaybe).apply {
+            configure {
+                when (outputGroup.get()) {
+                    "test" -> this.group = VERIFICATION_BUILD_TASK_GROUP
+                    "main" -> this.group = BUILD_TASK_GROUP
+                }
+                description = "Compiles '$name' to bitcode for $target${sanitizer.description}"
+                dependsOn(":kotlin-native:dependencies:update") // TODO: really needs only the current target
+            }
+        }
 
         override fun equals(other: Any?): Boolean {
             val rhs = other as? AbstractModule ?: return false
@@ -156,14 +165,8 @@ abstract class CompileToBitcodeExtension @Inject constructor(val project: Projec
             convention(project.layout.projectDirectory.dir("src/$name"))
         }
 
-        override final val task = project.tasks.register<CompileToBitcode>(fullTaskName(name, target.name, sanitizer), target, sanitizer.asMaybe).apply {
-            configure {
-                when (outputGroup.get()) {
-                    "test" -> this.group = VERIFICATION_BUILD_TASK_GROUP
-                    "main" -> this.group = BUILD_TASK_GROUP
-                }
-                description = "Compiles '$name' to bitcode for $target${sanitizer.description}"
-                dependsOn(":kotlin-native:dependencies:update") // TODO: really needs only the current target
+        init {
+            task.configure {
                 this.moduleName.set(name)
                 this.outputFile.convention(moduleName.flatMap { project.layout.buildDirectory.file("bitcode/${outputGroup.get()}/$target${sanitizer.dirSuffix}/$it.bc") })
                 this.outputDirectory.convention(moduleName.flatMap { project.layout.buildDirectory.dir("bitcode/${outputGroup.get()}/$target${sanitizer.dirSuffix}/$it") })
