@@ -1,5 +1,5 @@
 // EXPECTED_REACHABLE_NODES: 1252
-// IGNORE_BACKEND: JS
+// DONT_TARGET_EXACT_BACKEND: JS
 // ES_MODULES
 
 // MODULE: overriden_chain_non_export_intermediate

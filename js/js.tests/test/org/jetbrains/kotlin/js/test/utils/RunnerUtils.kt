@@ -68,7 +68,7 @@ private fun extractJsFiles(
 }
 
 fun getAdditionalFilePathes(testServices: TestServices, mode: TranslationMode = TranslationMode.FULL): List<String> {
-   return getAdditionalFiles(testServices, mode, true).map { it.absolutePath }
+    return getAdditionalFiles(testServices, mode, true).map { it.absolutePath }
 }
 
 fun getAdditionalFiles(
@@ -147,7 +147,8 @@ fun getAllFilesForRunner(
 
     if (modulesToArtifact.values.any { it is BinaryArtifacts.Js.JsIrArtifact }) {
         // JS IR
-        val (module, compilerResult) = modulesToArtifact.entries.mapNotNull { (m, c) -> (c as? BinaryArtifacts.Js.JsIrArtifact)?.let { m to c.compilerResult } }.single()
+        val (module, compilerResult) = modulesToArtifact.entries.mapNotNull { (m, c) -> (c as? BinaryArtifacts.Js.JsIrArtifact)?.let { m to c.compilerResult } }
+            .single()
         val result = mutableMapOf<TranslationMode, List<String>>()
 
         compilerResult.outputs.entries.forEach { (mode, outputs) ->
@@ -176,7 +177,7 @@ fun getAllFilesForRunner(
         val dceOutputDir = JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices, TranslationMode.FULL_DCE_MINIMIZED_NAMES)
 
         val artifactsPaths = modulesToArtifact.values.map { it.outputFile.absolutePath }.filter { !File(it).isDirectory }
-        val allJsFiles = additionalFiles + inputJsFilesBefore +artifactsPaths + commonFiles + additionalMainFiles + inputJsFilesAfter
+        val allJsFiles = additionalFiles + inputJsFilesBefore + artifactsPaths + commonFiles + additionalMainFiles + inputJsFilesAfter
 
         val result = mutableMapOf(TranslationMode.FULL to allJsFiles)
 
@@ -236,7 +237,7 @@ fun extractTestPackage(testServices: TestServices, ignoreEsModules: Boolean = tr
 
     val fileWithBoxFunction = ktFiles.find { (module, ktFile) ->
         (!ignoreEsModules || module.kind != ModuleKind.ES) &&
-        ktFile.declarations.find { it is KtNamedFunction && it.name == TEST_FUNCTION } != null
+                ktFile.declarations.find { it is KtNamedFunction && it.name == TEST_FUNCTION } != null
     } ?: return null
 
     return fileWithBoxFunction.second.packageFqName.asString().takeIf { it.isNotEmpty() }
@@ -253,10 +254,8 @@ fun extractEntryModulePath(
                 files
                     .find { it.isMjsFile && JsEnvironmentConfigurationDirectives.ENTRY_ES_MODULE in it.directives }
                     ?.let {
-                        File(
-                            JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices, mode),
-                            getNameFor(it, testServices)
-                        ).absolutePath
+                        JsEnvironmentConfigurator.getJsArtifactsOutputDir(testServices, mode).absolutePath +
+                                File.separator + getNameFor(it, testServices)
                     }
             }
 

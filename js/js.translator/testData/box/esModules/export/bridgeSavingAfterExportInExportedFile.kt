@@ -1,4 +1,4 @@
-// TARGET_BACKEND: JS_IR
+// DONT_TARGET_EXACT_BACKEND: JS
 // ES_MODULES
 
 // MODULE: bridge_saving_after_export
