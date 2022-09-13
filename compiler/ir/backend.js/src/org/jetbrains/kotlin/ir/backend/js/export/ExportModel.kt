@@ -48,7 +48,7 @@ data class ExportedConstructSignature(
     val returnType: ExportedType,
 ) : ExportedDeclaration()
 
-class ExportedProperty(
+data class ExportedProperty(
     val name: String,
     val type: ExportedType,
     val mutable: Boolean = true,

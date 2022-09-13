@@ -2260,6 +2260,12 @@ public class FirJsTestGenerated extends AbstractFirJsTest {
             }
 
             @Test
+            @TestMetadata("exportFileWithTopLevelProperty.kt")
+            public void testExportFileWithTopLevelProperty() throws Exception {
+                runTest("js/js.translator/testData/box/esModules/export/exportFileWithTopLevelProperty.kt");
+            }
+
+            @Test
             @TestMetadata("exportInnerClass.kt")
             public void testExportInnerClass() throws Exception {
                 runTest("js/js.translator/testData/box/esModules/export/exportInnerClass.kt");
@@ -2287,6 +2293,12 @@ public class FirJsTestGenerated extends AbstractFirJsTest {
             @TestMetadata("exportProtectedMembers.kt")
             public void testExportProtectedMembers() throws Exception {
                 runTest("js/js.translator/testData/box/esModules/export/exportProtectedMembers.kt");
+            }
+
+            @Test
+            @TestMetadata("exportTopLevelProperty.kt")
+            public void testExportTopLevelProperty() throws Exception {
+                runTest("js/js.translator/testData/box/esModules/export/exportTopLevelProperty.kt");
             }
 
             @Test

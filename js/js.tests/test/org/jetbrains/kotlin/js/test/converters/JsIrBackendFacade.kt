@@ -164,7 +164,8 @@ class JsIrBackendFacade(
         val runIrDce = JsEnvironmentConfigurationDirectives.RUN_IR_DCE in module.directives
         val runNewIr2Js = JsEnvironmentConfigurationDirectives.RUN_NEW_IR_2_JS in module.directives
         val perModuleOnly = JsEnvironmentConfigurationDirectives.SPLIT_PER_MODULE in module.directives
-        val isEsModules = JsEnvironmentConfigurationDirectives.ES_MODULES in module.directives
+        val isEsModules = JsEnvironmentConfigurationDirectives.ES_MODULES in module.directives ||
+                module.directives[JsEnvironmentConfigurationDirectives.MODULE_KIND].contains(ModuleKind.ES)
 
         val outputFile = File(JsEnvironmentConfigurator.getJsModuleArtifactPath(testServices, module.name, TranslationMode.FULL) + module.kind.extension)
 

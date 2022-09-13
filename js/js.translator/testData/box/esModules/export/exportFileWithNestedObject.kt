@@ -49,7 +49,7 @@ object MyObject {
 
 // FILE: main.mjs
 // ENTRY_ES_MODULE
-import { Foo, Abc, MyEnum, getMyObject } from "./exportFileWithNestedObject-nestedObjectExport_v5.mjs"
+import { Foo, Abc, MyEnum, MyObject } from "./exportFileWithNestedObject-nestedObjectExport_v5.mjs"
 
 export function box() {
     if (Abc.AbcCompanion.xyz() != 'Companion object method OK') return 'companion object function failure';
@@ -62,9 +62,9 @@ export function box() {
     if (MyEnum.B.name != 'B') return 'MyEnum.B failure';
     if (MyEnum.C.name != 'C') return 'MyEnum.C failure';
 
-    if (getMyObject().A.valueA() != "OK") return 'MyObject.A failure';
-    if (getMyObject().B.valueB() != "OK") return 'MyObject.B failure';
-    if (getMyObject().C.valueC() != "OK") return 'MyObject.C failure';
+    if (MyObject.getInstance().A.valueA() != "OK") return 'MyObject.A failure';
+    if (MyObject.getInstance().B.valueB() != "OK") return 'MyObject.B failure';
+    if (MyObject.getInstance().C.valueC() != "OK") return 'MyObject.C failure';
 
     return 'OK';
 }
