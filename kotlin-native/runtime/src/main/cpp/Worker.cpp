@@ -32,6 +32,7 @@
 #include "Memory.h"
 #include "Natives.h"
 #include "ObjCMMAPI.h"
+#include "ObjectAlloc.hpp"
 #include "Runtime.h"
 #include "Types.h"
 #include "Worker.h"
@@ -1155,6 +1156,7 @@ JobKind Worker::processQueueElement(bool blocking) {
       }
 
       DisposeStablePointer(job.executeAfter.operation);
+      kotlin::compactObjectPoolInCurrentThread();
       break;
     }
     case JOB_REGULAR: {
@@ -1187,6 +1189,7 @@ JobKind Worker::processQueueElement(bool blocking) {
       }
       // Notify the future.
       job.regularJob.future->storeResultUnlocked(result, ok);
+      kotlin::compactObjectPoolInCurrentThread();
       break;
     }
     default: {

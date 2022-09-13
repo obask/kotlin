@@ -5,11 +5,19 @@
 
 #include "ObjectAlloc.hpp"
 
+#if KONAN_MACOSX || KONAN_IOS || KONAN_WATCHOS || KONAN_TVOS
+#define KONAN_USE_DISPATCH 1
+#endif
+
 #include <mutex>
 
 #include "../../mimalloc/c/include/mimalloc.h"
 #include "Alignment.hpp"
 #include "CompilerConstants.hpp"
+
+#if KONAN_USE_DISPATCH
+#include <dispatch/dispatch.h>
+#endif
 
 using namespace kotlin;
 
@@ -17,7 +25,11 @@ namespace {
 
 std::once_flag initOptions;
 
-}
+#if KONAN_USE_DISPATCH
+std::atomic_flag scheduledCompactOnMainThread = ATOMIC_FLAG_INIT;
+#endif
+
+} // namespace
 
 void kotlin::initObjectPool() noexcept {
     if (!compiler::mimallocUseDefaultOptions()) {
@@ -32,4 +44,22 @@ void* kotlin::allocateInObjectPool(size_t size) noexcept {
 
 void kotlin::freeInObjectPool(void* ptr) noexcept {
     mi_free(ptr);
+}
+
+void kotlin::compactObjectPoolInCurrentThread() noexcept {
+    mi_collect(true);
+}
+
+void kotlin::compactObjectPoolInMainThread() noexcept {
+#if KONAN_USE_DISPATCH
+    if (scheduledCompactOnMainThread.test_and_set()) {
+        // If it's already scheduled, do nothing.
+        return;
+    }
+    dispatch_async_f(dispatch_get_main_queue(), nullptr, [](void*) {
+        kotlin::initObjectPool(); // Make sure mimalloc is initialized.
+        kotlin::compactObjectPoolInCurrentThread();
+        scheduledCompactOnMainThread.clear();
+    });
+#endif
 }
