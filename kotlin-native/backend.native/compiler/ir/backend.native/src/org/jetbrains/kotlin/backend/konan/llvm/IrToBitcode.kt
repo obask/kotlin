@@ -2291,7 +2291,9 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
     //-------------------------------------------------------------------------//
 
 
-    private fun IrFunction.returnsUnit() = returnType.isUnit()
+    private fun IrFunction.returnsUnit() = returnType.isUnit().also {
+        require(!isSuspend) { "Suspend functions should be lowered out at this point"}
+    }
 
     /**
      * Evaluates all arguments of [expression] that are explicitly represented in the IR.
