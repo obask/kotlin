@@ -12,6 +12,12 @@ import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.util.overrides
 
 internal class NativeAddContinuationToFunctionCallsLowering(override val context: Context) : AbstractAddContinuationToFunctionCallsLowering() {
+    /*
+     * In complex cases suspend functions are converted to state-machine class with invokeSuspend method.
+     * In that case continuation is an object itself
+     * In simple cases, function is leaved as is, and receive continuation as it's last parameter
+     * We should handle both cases here
+     */
     override fun IrSimpleFunction.getContinuationParameter() = when {
         overrides(context.ir.symbols.invokeSuspendFunction.owner) -> dispatchReceiverParameter!!
         else -> {
