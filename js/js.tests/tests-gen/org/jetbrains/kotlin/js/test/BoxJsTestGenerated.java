@@ -6805,36 +6805,6 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
         public void testAllFilesPresentInKeep() throws Exception {
             KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("js/js.translator/testData/box/keep"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.JS, true);
         }
-
-        @Test
-        @TestMetadata("keepClass.kt")
-        public void testKeepClass() throws Exception {
-            runTest("js/js.translator/testData/box/keep/keepClass.kt");
-        }
-
-        @Test
-        @TestMetadata("keepMethod.kt")
-        public void testKeepMethod() throws Exception {
-            runTest("js/js.translator/testData/box/keep/keepMethod.kt");
-        }
-
-        @Test
-        @TestMetadata("keepNestedClass.kt")
-        public void testKeepNestedClass() throws Exception {
-            runTest("js/js.translator/testData/box/keep/keepNestedClass.kt");
-        }
-
-        @Test
-        @TestMetadata("keepNestedClassIfKeptTopLevelClass.kt")
-        public void testKeepNestedClassIfKeptTopLevelClass() throws Exception {
-            runTest("js/js.translator/testData/box/keep/keepNestedClassIfKeptTopLevelClass.kt");
-        }
-
-        @Test
-        @TestMetadata("keepOverriddenMethod.kt")
-        public void testKeepOverriddenMethod() throws Exception {
-            runTest("js/js.translator/testData/box/keep/keepOverriddenMethod.kt");
-        }
     }
 
     @Nested
