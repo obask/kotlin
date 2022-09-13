@@ -128,7 +128,7 @@ public final class AnnotationsUtils {
         AnnotationDescriptor jsExport = descriptor.getAnnotations().findAnnotation(JS_EXPORT);
 
         if (jsExportIgnore != null) return false;
-        if (jsExport != null) return true4;
+        if (jsExport != null) return true;
 
         if (CollectionsKt.any(getContainingFileAnnotations(bindingContext, descriptor), annotation ->
                 JS_EXPORT.equals(annotation.getFqName())
