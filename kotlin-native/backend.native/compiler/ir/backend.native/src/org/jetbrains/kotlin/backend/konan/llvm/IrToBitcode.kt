@@ -2669,8 +2669,9 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
 
         val result = call(llvmCallable, args, resultLifetime, exceptionHandler, resultSlot)
 
-        if(needsNativeThreadState) {
-            functionGenerationContext.switchThreadState(ThreadState.Runnable)
+        when  {
+            function.returnType.isNothing() -> functionGenerationContext.unreachable()
+            needsNativeThreadState -> functionGenerationContext.switchThreadState(ThreadState.Runnable)
         }
 
         if (llvmCallable.returnType == voidType) {
