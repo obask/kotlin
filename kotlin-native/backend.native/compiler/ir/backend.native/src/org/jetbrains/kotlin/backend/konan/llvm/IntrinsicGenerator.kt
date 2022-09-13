@@ -154,10 +154,10 @@ internal class IntrinsicGenerator(private val environment: IntrinsicGeneratorEnv
     /**
      * Some intrinsics have to be processed before evaluation of their arguments.
      * So this method looks at [callSite] and if it is call to "special" intrinsic
-     * processes it. Otherwise it returns null.
+     * processes it. Otherwise, it returns null.
      */
+    @Suppress("UNUSED_PARAMETER")
     fun tryEvaluateSpecialCall(callSite: IrFunctionAccessExpression, resultSlot: LLVMValueRef?): LLVMValueRef? {
-        resultSlot.let{}
         val function = callSite.symbol.owner
         if (!function.isTypedIntrinsic) {
             return null
