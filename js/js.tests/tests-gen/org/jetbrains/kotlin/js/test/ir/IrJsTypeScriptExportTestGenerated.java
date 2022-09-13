@@ -186,6 +186,38 @@ public class IrJsTypeScriptExportTestGenerated extends AbstractIrJsTypeScriptExp
     }
 
     @Nested
+    @TestMetadata("js/js.translator/testData/typescript-export/excluded-exported-declarations")
+    @TestDataPath("$PROJECT_ROOT")
+    public class Excluded_exported_declarations {
+        @Test
+        public void testAllFilesPresentInExcluded_exported_declarations() throws Exception {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("js/js.translator/testData/typescript-export/excluded-exported-declarations"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.JS_IR, true);
+        }
+
+        @Test
+        @TestMetadata("excluded-exported-declarations.kt")
+        public void testExcluded_exported_declarations() throws Exception {
+            runTest("js/js.translator/testData/typescript-export/excluded-exported-declarations/excluded-exported-declarations.kt");
+        }
+    }
+
+    @Nested
+    @TestMetadata("js/js.translator/testData/typescript-export/excluded-exported-declarations-in-exported-file")
+    @TestDataPath("$PROJECT_ROOT")
+    public class Excluded_exported_declarations_in_exported_file {
+        @Test
+        public void testAllFilesPresentInExcluded_exported_declarations_in_exported_file() throws Exception {
+            KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("js/js.translator/testData/typescript-export/excluded-exported-declarations-in-exported-file"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.JS_IR, true);
+        }
+
+        @Test
+        @TestMetadata("excluded-exported-declarations.kt")
+        public void testExcluded_exported_declarations() throws Exception {
+            runTest("js/js.translator/testData/typescript-export/excluded-exported-declarations-in-exported-file/excluded-exported-declarations.kt");
+        }
+    }
+
+    @Nested
     @TestMetadata("js/js.translator/testData/typescript-export/functions")
     @TestDataPath("$PROJECT_ROOT")
     public class Functions {

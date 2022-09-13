@@ -192,8 +192,8 @@ public annotation class JsQualifier(val value: String)
 @SinceKotlin("1.3")
 public actual annotation class JsExport {
     /*
-    * The annotation prevent to export some of a class members
-    * This annotation is experimental, meaning that restrictions mentioned above are subject to change.
+    * The annotation prevents exporting the annotated member of an exported class.
+    * This annotation is experimental, meaning that the restrictions mentioned above are subject to change.
     */
     @ExperimentalJsExport
     @Retention(AnnotationRetention.BINARY)

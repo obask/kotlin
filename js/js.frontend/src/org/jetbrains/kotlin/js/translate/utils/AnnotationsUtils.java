@@ -124,9 +124,11 @@ public final class AnnotationsUtils {
             if (memberDescriptor.getVisibility() != DescriptorVisibilities.PUBLIC) return false;
         }
 
-        FqName firstAnnotationAppear = findFirstAnnotationAppearInDeclarationOrParent(descriptor, JS_EXPORT, JS_EXPORT_IGNORE);
+        AnnotationDescriptor jsExportIgnore = descriptor.getAnnotations().findAnnotation(JS_EXPORT_IGNORE);
+        AnnotationDescriptor jsExport = descriptor.getAnnotations().findAnnotation(JS_EXPORT);
 
-        if (firstAnnotationAppear != null) return firstAnnotationAppear == JS_EXPORT;
+        if (jsExportIgnore != null) return false;
+        if (jsExport != null) return true4;
 
         if (CollectionsKt.any(getContainingFileAnnotations(bindingContext, descriptor), annotation ->
                 JS_EXPORT.equals(annotation.getFqName())
