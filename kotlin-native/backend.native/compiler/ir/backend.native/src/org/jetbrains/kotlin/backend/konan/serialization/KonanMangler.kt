@@ -1,6 +1,7 @@
 package org.jetbrains.kotlin.backend.konan.serialization
 
 import org.jetbrains.kotlin.backend.common.serialization.mangle.KotlinExportChecker
+import org.jetbrains.kotlin.backend.common.serialization.mangle.MangleConstant
 import org.jetbrains.kotlin.backend.common.serialization.mangle.MangleMode
 import org.jetbrains.kotlin.backend.common.serialization.mangle.descriptor.DescriptorBasedKotlinManglerImpl
 import org.jetbrains.kotlin.backend.common.serialization.mangle.descriptor.DescriptorExportCheckerVisitor
@@ -74,6 +75,11 @@ abstract class AbstractKonanIrMangler(private val withReturnType: Boolean) : IrB
                         }
                     }
             return null
+        }
+
+        override fun IrFunction.platformSpecificFunctionMarks(): List<String> = when (origin) {
+            IrDeclarationOrigin.LOWERED_SUSPEND_FUNCTION -> listOf(MangleConstant.SUSPEND_FUNCTION_MARK)
+            else -> emptyList()
         }
 
         override fun IrFunction.specialValueParamPrefix(param: IrValueParameter): String {
