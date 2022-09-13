@@ -2,7 +2,7 @@
 // DONT_TARGET_EXACT_BACKEND: JS
 // ES_MODULES
 
-// MODULE: overriden_external_method_with_same_name_method
+// MODULE: lib
 // FILE: lib.kt
 external abstract class Foo {
     abstract fun o(): String
@@ -31,7 +31,7 @@ Foo.prototype.k = function() {
 
 // FILE: entry.mjs
 // ENTRY_ES_MODULE
-import { Baz } from "./overriddenExternalMethodWithSameNameMethod-overriden_external_method_with_same_name_method_v5.mjs";
+import { Baz } from "./overriddenExternalMethodWithSameNameMethod-lib_v5.mjs";
 
 export function box() {
     const foo = new Baz()
