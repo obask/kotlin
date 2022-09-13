@@ -65,11 +65,11 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
  */
 class JsReturnableBlockLowering(val context: JsIrBackendContext) : BodyLoweringPass {
     override fun lower(irBody: IrBody, container: IrDeclaration) {
-        container.transform(JsReturnableBlockTransformer(context), null)
+        container.transform(JsReturnableBlockTransformer(context, container), null)
     }
 }
 
-private class JsReturnableBlockTransformer(val context: JsIrBackendContext) :
+private class JsReturnableBlockTransformer(val context: JsIrBackendContext, val container: IrDeclaration) :
     IrElementTransformerVoidWithContext()
 {
     private var variablesForReturnTargets = mutableMapOf<IrReturnTargetSymbol, IrVariable>()
@@ -126,7 +126,7 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext) :
             )
         }.apply {
             origin = JsLoweredDeclarationOrigin.INLINE_FUNCTION_IIFE
-            parent = currentDeclarationParent ?: compilationException("Missing currentDeclarationParent", expression)
+            parent = currentDeclarationParent ?: container as? IrDeclarationParent ?: container.parent
             body = context.irFactory.createBlockBody(expression.startOffset, expression.endOffset, expression.statements)
             body!!.patchDeclarationParents(this)
         }
@@ -222,6 +222,9 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext) :
         val originalFunction = targetSymbol.owner.originalFunction
             ?: compilationException("Return target does not have a corresponding function", targetSymbol.owner)
 
+        if (originalFunction.origin == JsLoweredDeclarationOrigin.INLINE_FUNCTION_IIFE)
+            return expression
+
         val handleNonLocalReturnFromIIFE = wrapInIIFE && targetSymbol != returnTargetSymbolStack.peek()
 
         if (handleNonLocalReturnFromIIFE && !currentBlockHasNonLocalReturns) {
@@ -251,9 +254,8 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext) :
             )
         }
 
-        val builder = context.createIrBuilder(iifeSymbol ?: targetSymbol)
         return context.createIrBuilder(iifeSymbol ?: targetSymbol).irReturn(
-            builder.irComposite {
+            context.createIrBuilder(iifeSymbol ?: targetSymbol).irComposite {
                 +at(expression).irSet(variable.symbol, expression.value)
                 if (handleNonLocalReturnFromIIFE)
                     +irTrue()
