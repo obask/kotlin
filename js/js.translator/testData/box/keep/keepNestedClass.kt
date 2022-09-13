@@ -22,15 +22,23 @@ class A {
 }
 
 @JsExport
+fun barA(): A {
+    return A()
+}
+
+@JsExport
 fun bar(): A.B {
     return A.B()
 }
 
 // FILE: test.js
 function box() {
+    var a = this["keep_nested_class"].barA()
     var b = this["keep_nested_class"].bar()
 
-    if (b.baz_232z_k$() != "baz") return "fail 1"
+    if (typeof a.foo_26di_k$ !== "undefined") return "fail 1"
+    if (typeof a.bar_232r_k$ !== "undefined") return "fail 2"
+    if (b.baz_232z_k$() != "baz") return "fail 3"
 
     return "OK"
 }

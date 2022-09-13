@@ -27,6 +27,7 @@ function box() {
     var a = this["keep_method"].bar()
 
     if (a.foo_26di_k$() != "foo") return "fail 1"
+    if (typeof a.bar_232r_k$ !== "undefined") return "fail 2"
 
     return "OK"
 }
