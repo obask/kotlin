@@ -9986,12 +9986,6 @@ public class BlackBoxCodegenTestGenerated extends AbstractBlackBoxCodegenTest {
         }
 
         @Test
-        @TestMetadata("inheritFromAnotherModule.kt")
-        public void testInheritFromAnotherModule() throws Exception {
-            runTest("compiler/testData/codegen/box/coroutines/inheritFromAnotherModule.kt");
-        }
-
-        @Test
         @TestMetadata("inlineFunInGenericClass.kt")
         public void testInlineFunInGenericClass() throws Exception {
             runTest("compiler/testData/codegen/box/coroutines/inlineFunInGenericClass.kt");
@@ -12456,6 +12450,12 @@ public class BlackBoxCodegenTestGenerated extends AbstractBlackBoxCodegenTest {
             @Test
             public void testAllFilesPresentInMultiModule() throws Exception {
                 KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/coroutines/multiModule"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM, true);
+            }
+
+            @Test
+            @TestMetadata("inheritFromAnotherModule.kt")
+            public void testInheritFromAnotherModule() throws Exception {
+                runTest("compiler/testData/codegen/box/coroutines/multiModule/inheritFromAnotherModule.kt");
             }
 
             @Test

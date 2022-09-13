@@ -7867,11 +7867,6 @@ public class LightAnalysisModeTestGenerated extends AbstractLightAnalysisModeTes
             runTest("compiler/testData/codegen/box/coroutines/indirectInlineUsedAsNonInline.kt");
         }
 
-        @TestMetadata("inheritFromAnotherModule.kt")
-        public void testInheritFromAnotherModule() throws Exception {
-            runTest("compiler/testData/codegen/box/coroutines/inheritFromAnotherModule.kt");
-        }
-
         @TestMetadata("inlineFunInGenericClass.kt")
         public void testInlineFunInGenericClass() throws Exception {
             runTest("compiler/testData/codegen/box/coroutines/inlineFunInGenericClass.kt");
@@ -10003,6 +9998,11 @@ public class LightAnalysisModeTestGenerated extends AbstractLightAnalysisModeTes
 
             public void testAllFilesPresentInMultiModule() throws Exception {
                 KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/coroutines/multiModule"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM, true);
+            }
+
+            @TestMetadata("inheritFromAnotherModule.kt")
+            public void testInheritFromAnotherModule() throws Exception {
+                runTest("compiler/testData/codegen/box/coroutines/multiModule/inheritFromAnotherModule.kt");
             }
 
             @TestMetadata("inlineCrossModule.kt")

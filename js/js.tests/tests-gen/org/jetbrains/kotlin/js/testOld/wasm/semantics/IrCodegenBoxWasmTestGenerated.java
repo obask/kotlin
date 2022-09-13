@@ -6272,11 +6272,6 @@ public class IrCodegenBoxWasmTestGenerated extends AbstractIrCodegenBoxWasmTest 
             runTest("compiler/testData/codegen/box/coroutines/indirectInlineUsedAsNonInline.kt");
         }
 
-        @TestMetadata("inheritFromAnotherModule.kt")
-        public void testInheritFromAnotherModule() throws Exception {
-            runTest("compiler/testData/codegen/box/coroutines/inheritFromAnotherModule.kt");
-        }
-
         @TestMetadata("inlineFunInGenericClass.kt")
         public void testInlineFunInGenericClass() throws Exception {
             runTest("compiler/testData/codegen/box/coroutines/inlineFunInGenericClass.kt");
@@ -8243,6 +8238,11 @@ public class IrCodegenBoxWasmTestGenerated extends AbstractIrCodegenBoxWasmTest 
 
             public void testAllFilesPresentInMultiModule() throws Exception {
                 KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/testData/codegen/box/coroutines/multiModule"), Pattern.compile("^([^_](.+))\\.kt$"), null, TargetBackend.WASM, true);
+            }
+
+            @TestMetadata("inheritFromAnotherModule.kt")
+            public void testInheritFromAnotherModule() throws Exception {
+                runTest("compiler/testData/codegen/box/coroutines/multiModule/inheritFromAnotherModule.kt");
             }
 
             @TestMetadata("inlineCrossModule.kt")
