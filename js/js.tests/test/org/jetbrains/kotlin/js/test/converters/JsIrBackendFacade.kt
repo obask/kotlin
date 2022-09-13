@@ -168,6 +168,7 @@ class JsIrBackendFacade(
         val mainArguments = JsEnvironmentConfigurator.getMainCallParametersForModule(module)
             .run { if (shouldBeGenerated()) arguments() else null }
         val runIrDce = JsEnvironmentConfigurationDirectives.RUN_IR_DCE in module.directives
+        val onlyIrDce = JsEnvironmentConfigurationDirectives.ONLY_IR_DCE in module.directives
         val esModules = JsEnvironmentConfigurationDirectives.ES_MODULES in module.directives
         val runNewIr2Js = JsEnvironmentConfigurationDirectives.RUN_NEW_IR_2_JS in module.directives
         val perModuleOnly = JsEnvironmentConfigurationDirectives.SPLIT_PER_MODULE in module.directives
@@ -182,7 +183,7 @@ class JsIrBackendFacade(
                 // If perModuleOnly then skip whole program
                 // (it.dce => runIrDce) && (perModuleOnly => it.perModule)
                 val translationModes = TranslationMode.values()
-                    .filter { (!it.dce || runIrDce) && (!perModuleOnly || it.perModule) }
+                    .filter { (it.dce || !onlyIrDce) && (!it.dce || runIrDce) && (!perModuleOnly || it.perModule) }
                     .filter { it.dce == it.minimizedMemberNames }
                     .toSet()
                 val compilationOut = transformer.generateModule(loweredIr.allModules, translationModes, false)

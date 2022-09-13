@@ -210,6 +210,11 @@ object JsEnvironmentConfigurationDirectives : SimpleDirectivesContainer() {
         applicability = DirectiveApplicability.Global
     )
 
+    val ONLY_IR_DCE by directive(
+        description = "Disable non DCE build",
+        applicability = DirectiveApplicability.Global
+    )
+
     val RUN_IC by directive(
         description = "",
         applicability = DirectiveApplicability.Global
