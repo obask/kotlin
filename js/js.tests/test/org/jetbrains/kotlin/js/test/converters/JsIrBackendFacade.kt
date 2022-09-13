@@ -236,53 +236,8 @@ class JsIrBackendFacade(
 
     private fun BinaryArtifacts.Js.JsIrArtifact.dump(
         module: TestModule,
-        configuration: CompilerConfiguration,
-        inputArtifact: ClassicFrontendOutputArtifact
-    ): IrModuleInfo {
-        val errorPolicy = configuration.get(JSConfigurationKeys.ERROR_TOLERANCE_POLICY) ?: ErrorTolerancePolicy.DEFAULT
-        val messageLogger = configuration.irMessageLogger
-        val symbolTable = SymbolTable(IdSignatureDescriptor(JsManglerDesc), IrFactoryImplForJsIC(WholeWorldStageController()),)
-        val verifySignatures = JsEnvironmentConfigurationDirectives.SKIP_MANGLE_VERIFICATION !in module.directives
-
-        val psi2Ir = Psi2IrTranslator(
-            configuration.languageVersionSettings,
-            Psi2IrConfiguration(errorPolicy.allowErrors),
-            messageLogger::checkNoUnboundSymbols
-        )
-        val psi2IrContext = psi2Ir.createGeneratorContext(
-            inputArtifact.analysisResult.moduleDescriptor,
-            inputArtifact.analysisResult.bindingContext,
-            symbolTable
-        )
-
-        return getIrModuleInfoForSourceFiles(
-            psi2IrContext,
-            inputArtifact.project,
-            configuration,
-            inputArtifact.allKtFiles.values.toList(),
-            sortDependencies(JsEnvironmentConfigurator.getAllRecursiveLibrariesFor(module, testServices)),
-            emptyMap(),
-            symbolTable,
-            messageLogger,
-            loadFunctionInterfacesIntoStdlib = true,
-            verifySignatures,
-        ) { testServices.jsLibraryProvider.getDescriptorByCompiledLibrary(it) }
-    }
-
-    private fun jsOutputSink(perFileOutputDir: File): CompilerOutputSink {
-        perFileOutputDir.deleteRecursively()
-        perFileOutputDir.mkdirs()
-
-        return object : CompilerOutputSink {
-            override fun write(module: String, path: String, content: String) {
-                val file = File(File(perFileOutputDir, module), path)
-                file.parentFile.mkdirs()
-                file.writeText(content)
-            }
-        }
-    }
-
-    private fun BinaryArtifacts.Js.JsIrArtifact.dump(module: TestModule, firstTimeCompilation: Boolean = true): BinaryArtifacts.Js.JsIrArtifact {
+        firstTimeCompilation: Boolean = true
+    ): BinaryArtifacts.Js.JsIrArtifact {
         val configuration = testServices.compilerConfigurationProvider.getCompilerConfiguration(module)
         val moduleId = configuration.getNotNull(CommonConfigurationKeys.MODULE_NAME)
         val moduleKind = configuration.get(JSConfigurationKeys.MODULE_KIND, ModuleKind.PLAIN)
