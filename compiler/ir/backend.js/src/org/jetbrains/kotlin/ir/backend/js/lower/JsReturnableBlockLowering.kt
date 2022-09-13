@@ -103,7 +103,15 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext, val 
         }
     }
 
+    private fun IrReturnTargetSymbol.markAsCapturingThisIfOtherCapturesThis(other: IrReturnableBlockSymbol) =
+        returnableBlocksWithCapturedThis.remove(other)?.also { thisSymbol ->
+            if (this is IrReturnableBlockSymbol)
+                returnableBlocksWithCapturedThis[this] = thisSymbol
+        }
+
     private fun transformChildrenAndWrapInIifeIfNeeded(expression: IrReturnableBlock): IrExpression {
+        val closestReturnTargetSymbol = returnTargetSymbolStack.peek()
+
         returnTargetSymbolStack.push(expression.symbol)
 
         // If this feature is enabled, we wrap returnable blocks in immediately invoked function expressions (IIFE) so that
@@ -111,6 +119,7 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext, val 
         if (!wrapInIIFE) {
             expression.transformChildrenVoid()
             returnTargetSymbolStack.pop()
+            closestReturnTargetSymbol?.markAsCapturingThisIfOtherCapturesThis(expression.symbol)
             return expression
         }
 
@@ -141,12 +150,8 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext, val 
         functionExpression.transformChildrenVoid()
         returnTargetSymbolStack.pop()
 
-        val closestReturnTargetSymbol = returnTargetSymbolStack.peek()
-
         // If the returnable block contained `this`, don't forget to add `.bind(this)` to the function expression.
-        returnableBlocksWithCapturedThis.remove(expression.symbol)?.let { thisSymbol ->
-            if (closestReturnTargetSymbol is IrReturnableBlockSymbol)
-                returnableBlocksWithCapturedThis[closestReturnTargetSymbol] = thisSymbol
+        closestReturnTargetSymbol?.markAsCapturingThisIfOtherCapturesThis(expression.symbol)?.let { thisSymbol ->
             functionExpression = JsIrBuilder.buildCall(
                 target = context.intrinsics.jsBind,
                 type = functionType
@@ -266,7 +271,7 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext, val 
     }
 
     override fun visitGetValue(expression: IrGetValue): IrExpression {
-        if (!wrapInIIFE) return super.visitGetValue(expression)
+        if (!wrappingInIifeEnabled) return super.visitGetValue(expression)
         val currentReturnableBlockSymbol = returnTargetSymbolStack.peek() as? IrReturnableBlockSymbol
         if (currentReturnableBlockSymbol != null && expression.symbol.owner.isDispatchReceiver) {
             returnableBlocksWithCapturedThis[currentReturnableBlockSymbol] = expression.symbol

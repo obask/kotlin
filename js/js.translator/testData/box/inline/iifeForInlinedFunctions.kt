@@ -8,6 +8,10 @@ inline fun baz(l: () -> String) = l()
 
 fun noninline(l: () -> String) = l()
 
+@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+@kotlin.internal.InlineOnly
+inline fun inlineOnly(l: () -> String) = l()
+
 fun test1(a: Boolean) = baz {
     foo {
         val s = "O"
@@ -54,7 +58,17 @@ class A(val a: Int) {
     fun test7() = noninline {
         baz { "$a" }
     }
+
+    fun test9() = baz {
+        inlineOnly {
+            "$a"
+        }
+    }
 }
+
+fun test8(a: Long = 5.seconds) = a.toString()
+
+inline val Number.seconds: Long get() = this.toLong()
 
 fun box(): String {
     assertEquals(test1(true) + test1(false), "OK")
@@ -64,5 +78,7 @@ fun box(): String {
     assertEquals(A(2).B().test5(), "2")
     assertEquals(A(3).B().test6(), "3")
     assertEquals(A(4).test7(), "4")
+    assertEquals(test8(), "5")
+    assertEquals(A(6).test9(), "6")
     return "OK"
 }
