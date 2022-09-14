@@ -205,6 +205,11 @@ abstract class KotlinBasePluginWrapper : DefaultKotlinBasePlugin() {
             IdeaSyncDetector.IdeaSyncDetectorVariantFactory::class,
             DefaultIdeaSyncDetectorVariantFactory()
         )
+
+        factories.putIfAbsent(
+            ConfigurationTimePropertiesAccessor.ConfigurationTimePropertiesAccessorVariantFactory::class,
+            DefaultConfigurationTimePropertiesAccessorVariantFactory()
+        )
     }
 
     internal open fun createTestRegistry(project: Project) = KotlinTestsRegistry(project)
