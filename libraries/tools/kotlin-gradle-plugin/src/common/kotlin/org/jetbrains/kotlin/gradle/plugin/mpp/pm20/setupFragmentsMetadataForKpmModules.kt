@@ -253,7 +253,7 @@ private class GradleKpmMetadataCompilationTasksConfigurator(project: Project) : 
 private fun resolvedMetadataProviders(fragment: GradleKpmFragment) =
     fragment.withRefinesClosure.map {
         FragmentResolvedMetadataProvider(
-            fragment.project.tasks.withType<TransformKotlinGranularMetadataForFragment>().named(transformFragmentMetadataTaskName(it))
+            fragment.project.tasks.withType<GradleKpmMetadataDependencyTransformationTask>().named(transformFragmentMetadataTaskName(it))
         )
     }
 
@@ -264,7 +264,7 @@ private fun createExtractMetadataTask(
 ) {
     project.tasks.register(
         transformFragmentMetadataTaskName(fragment),
-        TransformKotlinGranularMetadataForFragment::class.java,
+        GradleKpmMetadataDependencyTransformationTask::class.java,
         fragment,
         transformation
     ).configure { task ->
