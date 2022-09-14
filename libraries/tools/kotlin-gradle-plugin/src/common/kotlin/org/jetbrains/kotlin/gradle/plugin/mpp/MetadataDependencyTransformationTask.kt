@@ -23,6 +23,11 @@ import org.jetbrains.kotlin.gradle.utils.notCompatibleWithConfigurationCache
 import java.io.File
 import javax.inject.Inject
 
+/* Keep typealias for source compatibility */
+@Suppress("unused")
+@Deprecated("Task was renamed to MetadataDependencyTransformationTask", replaceWith = ReplaceWith("MetadataDependencyTransformationTask"))
+typealias TransformKotlinGranularMetadata = MetadataDependencyTransformationTask
+
 open class MetadataDependencyTransformationTask
 @Inject constructor(
     @get:Internal
