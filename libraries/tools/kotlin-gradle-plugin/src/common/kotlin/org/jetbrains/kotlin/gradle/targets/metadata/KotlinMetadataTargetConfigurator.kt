@@ -340,7 +340,7 @@ class KotlinMetadataTargetConfigurator :
         val project = compilation.target.project
         val sourceSet = compilation.defaultSourceSet
 
-        project.registerTask<TransformKotlinGranularMetadata>(
+        project.registerTask<MetadataDependencyTransformationTask>(
             transformGranularMetadataTaskName(compilation.name),
             listOf(sourceSet)
         ) { }
@@ -453,7 +453,7 @@ class KotlinMetadataTargetConfigurator :
 
         val resolvedMetadataFilesProviders = lazy {
             val transformationTaskHolders = sourceSet.internal.withDependsOnClosure.mapNotNull { hierarchySourceSet ->
-                project.locateTask<TransformKotlinGranularMetadata>(transformGranularMetadataTaskName(hierarchySourceSet.name))
+                project.locateTask<MetadataDependencyTransformationTask>(transformGranularMetadataTaskName(hierarchySourceSet.name))
             }
             transformationTaskHolders.map { SourceSetResolvedMetadataProvider(it) }
         }
