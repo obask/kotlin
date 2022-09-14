@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.gradle.internal.kapt.incremental.KaptIncrementalChan
 import org.jetbrains.kotlin.gradle.internal.kapt.incremental.UnknownSnapshot
 import org.jetbrains.kotlin.gradle.internal.tasks.TaskWithLocalState
 import org.jetbrains.kotlin.gradle.plugin.CompilerPluginConfig
+import org.jetbrains.kotlin.gradle.plugin.internal.configurationTimePropertiesAccessor
 import org.jetbrains.kotlin.gradle.tasks.*
 import org.jetbrains.kotlin.gradle.utils.*
 import org.jetbrains.kotlin.utils.addToStdlib.cast
@@ -263,18 +264,13 @@ abstract class KaptTask @Inject constructor(
         internal fun queryKaptVerboseProperty(
             project: Project
         ): Provider<Boolean> {
-            return if (isConfigurationCacheAvailable(project.gradle)) {
+            return with(project.gradle.configurationTimePropertiesAccessor) {
                 project
                     .providers
                     .gradleProperty(KAPT_VERBOSE_OPTION_NAME)
-                    .forUseAtConfigurationTime()
+                    .usedAtConfigurationTime()
                     .map { it.toString().toBoolean() }
                     .orElse(false)
-            } else {
-                project.objects.property(
-                    project.hasProperty(KAPT_VERBOSE_OPTION_NAME) &&
-                            project.property(KAPT_VERBOSE_OPTION_NAME).toString().toBoolean()
-                )
             }
         }
     }

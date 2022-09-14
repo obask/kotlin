@@ -17,9 +17,10 @@
 package org.jetbrains.kotlin.gradle.tasks
 
 import org.gradle.api.Task
-import org.jetbrains.kotlin.gradle.utils.getSystemProperty
+import org.jetbrains.kotlin.gradle.utils.readSystemPropertyAtConfigurationTime
 
-private fun Task.isBuildCacheEnabledForKotlin(): Boolean = project.getSystemProperty(KOTLIN_CACHING_ENABLED_PROPERTY)?.toBoolean() ?: true
+private fun Task.isBuildCacheEnabledForKotlin(): Boolean =
+    project.readSystemPropertyAtConfigurationTime(KOTLIN_CACHING_ENABLED_PROPERTY)?.toBoolean() ?: true
 
 internal fun <T : Task> T.cacheOnlyIfEnabledForKotlin() {
     outputs.cacheIf { isBuildCacheEnabledForKotlin() }

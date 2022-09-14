@@ -9,6 +9,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.internal.StartParameterInternal
 import org.gradle.api.invocation.Gradle
+import org.jetbrains.kotlin.gradle.plugin.internal.configurationTimePropertiesAccessor
 
 internal fun isConfigurationCacheAvailable(gradle: Gradle) =
     try {
@@ -18,11 +19,9 @@ internal fun isConfigurationCacheAvailable(gradle: Gradle) =
         null
     } ?: false
 
-internal fun Project.getSystemProperty(key: String): String? {
-    return if (isConfigurationCacheAvailable(gradle)) {
-        providers.systemProperty(key).forUseAtConfigurationTime().orNull
-    } else {
-        System.getProperty(key)
+internal fun Project.readSystemPropertyAtConfigurationTime(key: String): String? {
+    return with(gradle.configurationTimePropertiesAccessor) {
+        providers.systemProperty(key).usedAtConfigurationTime().orNull
     }
 }
 
