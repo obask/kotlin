@@ -395,6 +395,9 @@ internal class PropertiesProvider private constructor(private val project: Proje
     val jsCompiler: KotlinJsCompilerType
         get() = this.property(jsCompilerProperty)?.let { KotlinJsCompilerType.byArgumentOrNull(it) } ?: KotlinJsCompilerType.LEGACY
 
+    val configurationCacheFriendlyGranularMetadataTransformation: Boolean
+        get() = booleanProperty("kotlin.experimental.configurationCacheFriendlyGranularMetadataTransformation") ?: true
+
     /**
      * Use Webpack 4 for compatibility
      */

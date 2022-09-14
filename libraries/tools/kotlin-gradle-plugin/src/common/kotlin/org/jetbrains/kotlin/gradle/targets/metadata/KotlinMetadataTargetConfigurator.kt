@@ -20,6 +20,7 @@ import org.gradle.api.tasks.bundling.Zip
 import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.plugin.mpp.*
+import org.jetbrains.kotlin.gradle.plugin.mpp.granularMetadata.TransformKotlinGranularMetadataRegistrar
 import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.*
 import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.hasKpmModel
 import org.jetbrains.kotlin.gradle.plugin.sources.*
@@ -343,10 +344,15 @@ class KotlinMetadataTargetConfigurator :
             listOf(sourceSet)
         ) { }
 
-        compilation.compileDependencyFiles += createMetadataDependencyTransformationClasspath(
-            project.configurations.getByName(ALL_COMPILE_METADATA_CONFIGURATION_NAME),
-            compilation
-        )
+        if (PropertiesProvider(project).configurationCacheFriendlyGranularMetadataTransformation) {
+            val registrar = TransformKotlinGranularMetadataRegistrar.create(project)
+            registrar.registerForMetadataCompilation(compilation)
+        } else {
+            compilation.compileDependencyFiles += createMetadataDependencyTransformationClasspath(
+                project.configurations.getByName(ALL_COMPILE_METADATA_CONFIGURATION_NAME),
+                compilation
+            )
+        }
 
         if (compilation is KotlinSharedNativeCompilation && sourceSet is DefaultKotlinSourceSet) {
             compilation.compileDependencyFiles += project.createCInteropMetadataDependencyClasspath(sourceSet)
