@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.backend.konan.llvm
 
 import kotlinx.cinterop.*
 import llvm.*
+import org.jetbrains.kotlin.backend.common.lower.coroutines.getOrCreateFunctionWithContinuationStub
 import org.jetbrains.kotlin.backend.common.lower.inline.InlinerExpressionLocationHint
 import org.jetbrains.kotlin.backend.konan.*
 import org.jetbrains.kotlin.backend.konan.cgen.CBridgeOrigin
@@ -2240,17 +2241,16 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
             isReifiedInline -> null
             // TODO: May be tie up inline lambdas to their outer function?
             codegen.isExternal(this) && !KonanBinaryInterface.isExported(this) -> null
-            this is IrSimpleFunction && isSuspend -> context.mapping.suspendFunctionsToFunctionWithContinuations[this]?.let { codegen.llvmFunctionOrNull(it)?.llvmValue }
+            this is IrSimpleFunction && isSuspend -> this.getOrCreateFunctionWithContinuationStub(context).let { codegen.llvmFunctionOrNull(it)?.llvmValue }
             else -> codegen.llvmFunctionOrNull(this)?.llvmValue
         }
         return if (functionLlvmValue != null) {
             context.debugInfo.subprograms.getOrPut(functionLlvmValue) {
                 memScoped {
                     val subroutineType = subroutineType(context, codegen.llvmTargetData)
-                    val llvmFunction = codegen.llvmFunction(this@scope).llvmValue
-                    diFunctionScope(name.asString(), llvmFunction.name!!, startLine, subroutineType).also {
+                    diFunctionScope(name.asString(), functionLlvmValue.name!!, startLine, subroutineType).also {
                         if (!this@scope.isInline)
-                            DIFunctionAddSubprogram(llvmFunction, it)
+                            DIFunctionAddSubprogram(functionLlvmValue, it)
                     }
                 }
             } as DIScopeOpaqueRef
