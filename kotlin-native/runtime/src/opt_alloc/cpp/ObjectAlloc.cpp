@@ -47,10 +47,12 @@ void kotlin::freeInObjectPool(void* ptr) noexcept {
 }
 
 void kotlin::compactObjectPoolInCurrentThread() noexcept {
+    if (!compiler::mimallocUseCompaction()) return;
     mi_collect(true);
 }
 
 void kotlin::compactObjectPoolInMainThread() noexcept {
+    if (!compiler::mimallocUseCompaction()) return;
 #if KONAN_USE_DISPATCH
     if (scheduledCompactOnMainThread.test_and_set()) {
         // If it's already scheduled, do nothing.
