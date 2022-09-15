@@ -124,11 +124,8 @@ public final class AnnotationsUtils {
             if (memberDescriptor.getVisibility() != DescriptorVisibilities.PUBLIC) return false;
         }
 
-        AnnotationDescriptor jsExportIgnore = descriptor.getAnnotations().findAnnotation(JS_EXPORT_IGNORE);
-        AnnotationDescriptor jsExport = descriptor.getAnnotations().findAnnotation(JS_EXPORT);
-
-        if (jsExportIgnore != null) return false;
-        if (jsExport != null) return true;
+        if (hasAnnotationOrInsideAnnotatedClass(descriptor, JS_EXPORT_IGNORE)) return false;
+        if (hasAnnotationOrInsideAnnotatedClass(descriptor, JS_EXPORT)) return true;
 
         if (CollectionsKt.any(getContainingFileAnnotations(bindingContext, descriptor), annotation ->
                 JS_EXPORT.equals(annotation.getFqName())
@@ -186,11 +183,6 @@ public final class AnnotationsUtils {
         return descriptor.getAnnotations().findAnnotation(JS_EXPORT);
     }
 
-    @Nullable
-    public static AnnotationDescriptor getJsExportIgnoreAnnotation(@NotNull DeclarationDescriptor descriptor) {
-        return descriptor.getAnnotations().findAnnotation(JS_EXPORT_IGNORE);
-    }
-
     public static boolean isPredefinedObject(@NotNull DeclarationDescriptor descriptor) {
         if (descriptor instanceof MemberDescriptor && ((MemberDescriptor) descriptor).isExpect()) return true;
         if (isEffectivelyExternalMember(descriptor)) return true;
@@ -216,17 +208,6 @@ public final class AnnotationsUtils {
 
         ClassDescriptor containingClass = DescriptorUtils.getContainingClass(descriptor);
         return containingClass != null && hasAnnotationOrInsideAnnotatedClass(containingClass, fqName);
-    }
-
-    @Nullable
-    private static FqName findFirstAnnotationAppearInDeclarationOrParent(@NotNull DeclarationDescriptor descriptor, @NotNull FqName first, @NotNull FqName second) {
-        Annotations annotations = descriptor.getAnnotations();
-
-        if (annotations.hasAnnotation(first)) return first;
-        if (annotations.hasAnnotation(second)) return second;
-
-        ClassDescriptor containingClass = DescriptorUtils.getContainingClass(descriptor);
-        return containingClass == null ? null : findFirstAnnotationAppearInDeclarationOrParent(containingClass, first, second);
     }
 
     public static boolean hasJsNameInAccessors(@NotNull PropertyDescriptor property) {
