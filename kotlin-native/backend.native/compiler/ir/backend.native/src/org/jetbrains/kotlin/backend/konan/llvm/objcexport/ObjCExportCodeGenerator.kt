@@ -8,6 +8,7 @@ package org.jetbrains.kotlin.backend.konan.llvm.objcexport
 import kotlinx.cinterop.toCValues
 import kotlinx.cinterop.toKString
 import llvm.*
+import org.jetbrains.kotlin.backend.common.lower.coroutines.getOrCreateFunctionWithContinuationStub
 import org.jetbrains.kotlin.backend.konan.*
 import org.jetbrains.kotlin.backend.konan.descriptors.ClassLayoutBuilder
 import org.jetbrains.kotlin.backend.konan.descriptors.OverriddenFunctionInfo
@@ -303,7 +304,7 @@ internal class ObjCExportCodeGenerator(
 
     private inline fun <reified T: IrFunction> T.getLowered(): T = when (this) {
         is IrSimpleFunction -> when {
-            isSuspend -> context.mapping.suspendFunctionsToFunctionWithContinuations[this] as T
+            isSuspend -> this.getOrCreateFunctionWithContinuationStub(context) as T
             else -> this
         }
         else -> this
