@@ -56,16 +56,12 @@ private constructor(
 
     private val ResolvedArtifactResult.isMpp: Boolean get() = variant.attributes.doesContainMultiplatformAttributes
 
-    private val KotlinSourceSet.dependsOnClassesDirs get(): FileCollection {
-            return project.files({
-                  internal.dependsOnClosure.mapNotNull { hierarchySourceSet ->
-                      val compilation =
-                          project.getMetadataCompilationForSourceSet(
-                              hierarchySourceSet
-                          ) ?: return@mapNotNull null
-                      compilation.output.classesDirs
-                  }
-              })
+    private val KotlinSourceSet.dependsOnClassesDirs
+        get(): FileCollection = project.filesProvider {
+            internal.dependsOnClosure.mapNotNull { hierarchySourceSet ->
+                val compilation = project.getMetadataCompilationForSourceSet(hierarchySourceSet) ?: return@mapNotNull null
+                compilation.output.classesDirs
+            }
         }
 
     /**
