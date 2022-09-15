@@ -730,10 +730,11 @@ private class ScriptToClassTransformer(
         if (irScript.needsReceiverProcessing) {
             val target = expression.symbol.owner
             val receiver: IrValueParameter? = target.dispatchReceiverParameter
-            if (receiver?.name == SpecialNames.THIS) {
-                val newReceiver = getDispatchReceiverExpression(data, expression, receiver.type, expression.origin)
-                if (newReceiver != null) {
-                    expression.dispatchReceiver = newReceiver
+            val receiverExpression = expression.dispatchReceiver
+            if (receiver?.name == SpecialNames.THIS && receiverExpression is IrGetValue && receiverExpression.symbol.owner.origin == IrDeclarationOrigin.INSTANCE_RECEIVER) {
+                val newReceiverExpression = getDispatchReceiverExpression(data, expression, receiver.type, expression.origin)
+                if (newReceiverExpression != null) {
+                    expression.dispatchReceiver = newReceiverExpression
                 }
             }
         }
