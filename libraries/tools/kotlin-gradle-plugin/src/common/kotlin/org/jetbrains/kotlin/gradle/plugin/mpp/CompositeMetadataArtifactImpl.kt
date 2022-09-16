@@ -116,7 +116,7 @@ internal class CompositeMetadataArtifactImpl(
 
         /**
          * Example:
-         * org.jetbrains.sample-sampleLibrary-1.0.0-SNAPSHOT-appleAndLinuxMain.klib
+         * org.jetbrains.sample-sampleLibrary-1.0.0-SNAPSHOT-appleAndLinuxMain-Vk5pxQ.klib
          */
         override val relativeFile: File = File(buildString {
             append(artifactHandle.moduleDependencyIdentifier)
@@ -163,7 +163,7 @@ internal class CompositeMetadataArtifactImpl(
         /**
          * Example:
          * org.jetbrains.sample-sampleLibrary-1.0.0-SNAPSHOT-appleAndLinuxMain-cinterop/
-         *     org.jetbrains.sample_sampleLibrary-cinterop-simple.klib
+         *     org.jetbrains.sample_sampleLibrary-cinterop-simple-Vk5pxQ.klib
          */
         override val relativeFile: File = File(buildString {
             append(artifactHandle.moduleDependencyIdentifier)
