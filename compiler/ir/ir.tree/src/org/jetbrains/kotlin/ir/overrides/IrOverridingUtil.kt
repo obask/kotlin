@@ -272,7 +272,9 @@ class IrOverridingUtil(
         addedFakeOverrides: MutableList<IrOverridableMember>,
         compatibilityMode: Boolean
     ) {
-        val fromSuper = notOverridden.toMutableSet()
+        val fromSuper = hashSetOf<IrOverridableMember>()
+        filterOutCustomizedFakeOverridesTo(fromSuper, notOverridden)
+
         while (fromSuper.isNotEmpty()) {
             val notOverriddenFromSuper = findMemberWithMaxVisibility(fromSuper)
             val overridables = extractMembersOverridableInBothWays(
@@ -281,6 +283,26 @@ class IrOverridingUtil(
             )
             createAndBindFakeOverride(overridables, current, addedFakeOverrides, compatibilityMode)
         }
+    }
+
+    /**
+     * If there is a mix of [IrOverridableMember]s with origin=[IrDeclarationOrigin.FAKE_OVERRIDE]s (true "fake overrides")
+     * and [IrOverridableMember]s that were customized with the help of [IrUnimplementedOverridesStrategy] (customized "fake overrides"),
+     * then leave only true ones. Rationale: They should point to non-abstract callable members in one of super classes, so
+     * effectively they are implemented in the current class.
+     */
+    private fun filterOutCustomizedFakeOverridesTo(
+        destination: MutableCollection<IrOverridableMember>,
+        toFilter: Collection<IrOverridableMember>
+    ) {
+        if (toFilter.size > 1) {
+            val (trueFakeOverrides, customizedFakeOverrides) = toFilter.partition { it.origin == IrDeclarationOrigin.FAKE_OVERRIDE }
+            if (trueFakeOverrides.isNotEmpty() && customizedFakeOverrides.isNotEmpty()) {
+                destination += trueFakeOverrides
+                return
+            }
+        }
+        destination += toFilter
     }
 
     private fun filterVisibleFakeOverrides(toFilter: Collection<IrOverridableMember>): Collection<IrOverridableMember> {
