@@ -29,13 +29,13 @@ internal class KotlinJsOptionsImpl : KotlinJsOptionsBase() {
 
     internal var destDir: String? = null
 
-    @Deprecated("")
+    @Deprecated("Output file is deprecated. Use destinationDir of task")
     override var outputFile: String? = null
         get() = field
         set(value) {
             value?.let {
                 val file = File(it)
-                destDir = file.parentFile.normalize().absolutePath
+                destDir = (if (file.extension == "") file else file.parentFile).normalize().absolutePath
                 outputName = file.nameWithoutExtension
             }
             field = value
