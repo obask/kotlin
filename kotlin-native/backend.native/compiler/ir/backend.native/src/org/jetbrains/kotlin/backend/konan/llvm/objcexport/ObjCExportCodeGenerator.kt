@@ -302,7 +302,7 @@ internal class ObjCExportCodeGenerator(
         val mapper: ObjCExportMapper
 ) : ObjCExportCodeGeneratorBase(codegen) {
 
-    private inline fun <reified T: IrFunction> T.getLowered(): T = when (this) {
+    inline fun <reified T: IrFunction> T.getLowered(): T = when (this) {
         is IrSimpleFunction -> when {
             isSuspend -> this.getOrCreateFunctionWithContinuationStub(context) as T
             else -> this
@@ -1773,7 +1773,7 @@ private fun ObjCExportCodeGenerator.createReverseAdapters(
 
     val allBaseMethodsByIr = type.kotlinMethods.map { it.baseMethod }.associateBy { it.owner }
 
-    for (method in type.irClassSymbol.owner.simpleFunctions()) {
+    for (method in type.irClassSymbol.owner.simpleFunctions().map { it.getLowered() }) {
         val baseMethods = method.allOverriddenFunctions.mapNotNull { allBaseMethodsByIr[it] }
         if (baseMethods.isEmpty()) continue
 
