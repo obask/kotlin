@@ -12,15 +12,9 @@ import org.jetbrains.kotlin.fir.declarations.synthetic.buildSyntheticProperty
 import org.jetbrains.kotlin.fir.declarations.utils.isStatic
 import org.jetbrains.kotlin.fir.scopes.*
 import org.jetbrains.kotlin.fir.symbols.SyntheticSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirSyntheticPropertySymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirVariableSymbol
-import org.jetbrains.kotlin.fir.types.ConeClassLikeType
+import org.jetbrains.kotlin.fir.symbols.impl.*
+import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.types.ConeNullability.NOT_NULL
-import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
-import org.jetbrains.kotlin.fir.types.typeContext
-import org.jetbrains.kotlin.fir.types.withNullability
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.StandardClassIds
@@ -46,23 +40,27 @@ class FirSyntheticFunctionSymbol(
 class FirSyntheticPropertiesScope private constructor(
     val session: FirSession,
     private val baseScope: FirTypeScope,
+    private val containingClassSymbol: FirRegularClassSymbol?,
     private val syntheticNamesProvider: FirSyntheticNamesProvider
 ) : FirContainingNamesAwareScope() {
     companion object {
         fun createIfSyntheticNamesProviderIsDefined(
             session: FirSession,
+            dispatchReceiverType: ConeKotlinType,
             baseScope: FirTypeScope
         ): FirSyntheticPropertiesScope? {
-            val syntheticNamesProvider = session.syntheticNamesProvider
-            return if (syntheticNamesProvider != null)
-                FirSyntheticPropertiesScope(session, baseScope, syntheticNamesProvider)
-            else
-                null
+            val syntheticNamesProvider = session.syntheticNamesProvider ?: return null
+            return FirSyntheticPropertiesScope(
+                session,
+                baseScope,
+                dispatchReceiverType.toRegularClassSymbol(session),
+                syntheticNamesProvider
+            )
         }
     }
 
     override fun processPropertiesByName(name: Name, processor: (FirVariableSymbol<*>) -> Unit) {
-        val getterNames = syntheticNamesProvider.possibleGetterNamesByPropertyName(name)
+        val getterNames = syntheticNamesProvider.possibleGetterNamesByPropertyName(name, containingClassSymbol)
         for (getterName in getterNames) {
             baseScope.processFunctionsByName(getterName) {
                 checkGetAndCreateSynthetic(name, getterName, it, processor)
@@ -71,7 +69,7 @@ class FirSyntheticPropertiesScope private constructor(
     }
 
     override fun getCallableNames(): Set<Name> = baseScope.getCallableNames().flatMapTo(hashSetOf()) { propertyName ->
-        syntheticNamesProvider.possiblePropertyNamesByAccessorName(propertyName)
+        syntheticNamesProvider.possiblePropertyNamesByAccessorName(propertyName, containingClassSymbol)
     }
 
     override fun getClassifierNames(): Set<Name> = emptySet()
@@ -95,7 +93,7 @@ class FirSyntheticPropertiesScope private constructor(
 
         var matchingSetter: FirSimpleFunction? = null
         if (getterReturnType != null) {
-            val setterName = syntheticNamesProvider.setterNameByGetterName(getterName)
+            val setterName = syntheticNamesProvider.setterNameByGetterName(getterName, containingClassSymbol)
             baseScope.processFunctionsByName(setterName, fun(setterSymbol: FirNamedFunctionSymbol) {
                 if (matchingSetter != null) return
                 val setter = setterSymbol.fir
