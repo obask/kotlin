@@ -24,7 +24,7 @@ fun ScriptEngine.overrideAsserter() {
 }
 
 private fun String.escapePath(): String {
-    return replace("\\", "\\\\")
+    return replace("\\", "/")
 }
 
 @Suppress("UNUSED_PARAMETER")
