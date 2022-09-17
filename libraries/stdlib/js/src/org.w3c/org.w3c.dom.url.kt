@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2022 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -43,7 +43,7 @@ public external open class URL(url: String, base: String = definedExternally) {
 /**
  * Exposes the JavaScript [URLSearchParams](https://developer.mozilla.org/en/docs/Web/API/URLSearchParams) to Kotlin
  */
-public external open class URLSearchParams(init: dynamic = definedExternally) {
+public external open class URLSearchParams(init: Dynamic? = definedExternally) {
     fun append(name: String, value: String)
     fun delete(name: String)
     fun get(name: String): String?

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2022 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -17,8 +17,8 @@ import org.w3c.workers.*
  * Exposes the JavaScript [Notification](https://developer.mozilla.org/en/docs/Web/API/Notification) to Kotlin
  */
 public external open class Notification(title: String, options: NotificationOptions = definedExternally) : EventTarget {
-    var onclick: ((MouseEvent) -> dynamic)?
-    var onerror: ((Event) -> dynamic)?
+    var onclick: ((MouseEvent) -> Dynamic)?
+    var onerror: ((Event) -> Dynamic)?
     open val title: String
     open val dir: NotificationDirection
     open val lang: String
@@ -71,7 +71,7 @@ public external interface NotificationOptions {
     var sound: String?
         get() = definedExternally
         set(value) = definedExternally
-    var vibrate: dynamic
+    var vibrate: Dynamic?
         get() = definedExternally
         set(value) = definedExternally
     var timestamp: Number?
@@ -102,7 +102,7 @@ public external interface NotificationOptions {
 
 @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 @kotlin.internal.InlineOnly
-public inline fun NotificationOptions(dir: NotificationDirection? = NotificationDirection.AUTO, lang: String? = "", body: String? = "", tag: String? = "", image: String? = undefined, icon: String? = undefined, badge: String? = undefined, sound: String? = undefined, vibrate: dynamic = undefined, timestamp: Number? = undefined, renotify: Boolean? = false, silent: Boolean? = false, noscreen: Boolean? = false, requireInteraction: Boolean? = false, sticky: Boolean? = false, data: Any? = null, actions: Array<NotificationAction>? = arrayOf()): NotificationOptions {
+public inline fun NotificationOptions(dir: NotificationDirection? = NotificationDirection.AUTO, lang: String? = "", body: String? = "", tag: String? = "", image: String? = undefined, icon: String? = undefined, badge: String? = undefined, sound: String? = undefined, vibrate: Dynamic? = undefined.unsafeCast<Dynamic?>(), timestamp: Number? = undefined, renotify: Boolean? = false, silent: Boolean? = false, noscreen: Boolean? = false, requireInteraction: Boolean? = false, sticky: Boolean? = false, data: Any? = null, actions: Array<NotificationAction>? = arrayOf()): NotificationOptions {
     val o = js("({})")
     o["dir"] = dir
     o["lang"] = lang
@@ -121,7 +121,7 @@ public inline fun NotificationOptions(dir: NotificationDirection? = Notification
     o["sticky"] = sticky
     o["data"] = data
     o["actions"] = actions
-    return o
+    return o as NotificationOptions
 }
 
 public external interface NotificationAction {
@@ -139,7 +139,7 @@ public inline fun NotificationAction(action: String?, title: String?, icon: Stri
     o["action"] = action
     o["title"] = title
     o["icon"] = icon
-    return o
+    return o as NotificationAction
 }
 
 public external interface GetNotificationOptions {
@@ -153,7 +153,7 @@ public external interface GetNotificationOptions {
 public inline fun GetNotificationOptions(tag: String? = ""): GetNotificationOptions {
     val o = js("({})")
     o["tag"] = tag
-    return o
+    return o as GetNotificationOptions
 }
 
 /**
@@ -187,7 +187,7 @@ public inline fun NotificationEventInit(notification: Notification?, action: Str
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as NotificationEventInit
 }
 
 /* please, don't implement this interface! */
@@ -197,11 +197,11 @@ public external interface NotificationPermission {
     companion object
 }
 
-public inline val NotificationPermission.Companion.DEFAULT: NotificationPermission get() = "default".asDynamic().unsafeCast<NotificationPermission>()
+public inline val NotificationPermission.Companion.DEFAULT: NotificationPermission get() = "default".unsafeCast<NotificationPermission>()
 
-public inline val NotificationPermission.Companion.DENIED: NotificationPermission get() = "denied".asDynamic().unsafeCast<NotificationPermission>()
+public inline val NotificationPermission.Companion.DENIED: NotificationPermission get() = "denied".unsafeCast<NotificationPermission>()
 
-public inline val NotificationPermission.Companion.GRANTED: NotificationPermission get() = "granted".asDynamic().unsafeCast<NotificationPermission>()
+public inline val NotificationPermission.Companion.GRANTED: NotificationPermission get() = "granted".unsafeCast<NotificationPermission>()
 
 /* please, don't implement this interface! */
 @JsName("null")
@@ -210,8 +210,8 @@ public external interface NotificationDirection {
     companion object
 }
 
-public inline val NotificationDirection.Companion.AUTO: NotificationDirection get() = "auto".asDynamic().unsafeCast<NotificationDirection>()
+public inline val NotificationDirection.Companion.AUTO: NotificationDirection get() = "auto".unsafeCast<NotificationDirection>()
 
-public inline val NotificationDirection.Companion.LTR: NotificationDirection get() = "ltr".asDynamic().unsafeCast<NotificationDirection>()
+public inline val NotificationDirection.Companion.LTR: NotificationDirection get() = "ltr".unsafeCast<NotificationDirection>()
 
-public inline val NotificationDirection.Companion.RTL: NotificationDirection get() = "rtl".asDynamic().unsafeCast<NotificationDirection>()
+public inline val NotificationDirection.Companion.RTL: NotificationDirection get() = "rtl".unsafeCast<NotificationDirection>()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2022 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -17,7 +17,7 @@ import org.w3c.xhr.*
 /**
  * Exposes the JavaScript [Blob](https://developer.mozilla.org/en/docs/Web/API/Blob) to Kotlin
  */
-public external open class Blob(blobParts: Array<dynamic> = definedExternally, options: BlobPropertyBag = definedExternally) : MediaProvider, ImageBitmapSource {
+public external open class Blob(blobParts: Array<Dynamic?> = definedExternally, options: BlobPropertyBag = definedExternally) : MediaProvider, ImageBitmapSource {
     open val size: Number
     open val type: String
     open val isClosed: Boolean
@@ -36,13 +36,13 @@ public external interface BlobPropertyBag {
 public inline fun BlobPropertyBag(type: String? = ""): BlobPropertyBag {
     val o = js("({})")
     o["type"] = type
-    return o
+    return o as BlobPropertyBag
 }
 
 /**
  * Exposes the JavaScript [File](https://developer.mozilla.org/en/docs/Web/API/File) to Kotlin
  */
-public external open class File(fileBits: Array<dynamic>, fileName: String, options: FilePropertyBag = definedExternally) : Blob {
+public external open class File(fileBits: Array<Dynamic?>, fileName: String, options: FilePropertyBag = definedExternally) : Blob {
     open val name: String
     open val lastModified: Int
 }
@@ -59,7 +59,7 @@ public inline fun FilePropertyBag(lastModified: Int? = undefined, type: String? 
     val o = js("({})")
     o["lastModified"] = lastModified
     o["type"] = type
-    return o
+    return o as FilePropertyBag
 }
 
 /**
@@ -78,14 +78,14 @@ public inline operator fun FileList.get(index: Int): File? = asDynamic()[index]
  */
 public external open class FileReader : EventTarget {
     open val readyState: Short
-    open val result: dynamic
-    open val error: dynamic
-    var onloadstart: ((ProgressEvent) -> dynamic)?
-    var onprogress: ((ProgressEvent) -> dynamic)?
-    var onload: ((Event) -> dynamic)?
-    var onabort: ((Event) -> dynamic)?
-    var onerror: ((Event) -> dynamic)?
-    var onloadend: ((Event) -> dynamic)?
+    open val result: Dynamic?
+    open val error: Dynamic?
+    var onloadstart: ((ProgressEvent) -> Dynamic)?
+    var onprogress: ((ProgressEvent) -> Dynamic)?
+    var onload: ((Event) -> Dynamic)?
+    var onabort: ((Event) -> Dynamic)?
+    var onerror: ((Event) -> Dynamic)?
+    var onloadend: ((Event) -> Dynamic)?
     fun readAsArrayBuffer(blob: Blob)
     fun readAsBinaryString(blob: Blob)
     fun readAsText(blob: Blob, label: String = definedExternally)

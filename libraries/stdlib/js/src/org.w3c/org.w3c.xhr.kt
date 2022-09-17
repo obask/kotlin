@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2022 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -18,13 +18,13 @@ import org.w3c.files.*
  * Exposes the JavaScript [XMLHttpRequestEventTarget](https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequestEventTarget) to Kotlin
  */
 public external abstract class XMLHttpRequestEventTarget : EventTarget {
-    open var onloadstart: ((ProgressEvent) -> dynamic)?
-    open var onprogress: ((ProgressEvent) -> dynamic)?
-    open var onabort: ((Event) -> dynamic)?
-    open var onerror: ((Event) -> dynamic)?
-    open var onload: ((Event) -> dynamic)?
-    open var ontimeout: ((Event) -> dynamic)?
-    open var onloadend: ((Event) -> dynamic)?
+    open var onloadstart: ((ProgressEvent) -> Dynamic)?
+    open var onprogress: ((ProgressEvent) -> Dynamic)?
+    open var onabort: ((Event) -> Dynamic)?
+    open var onerror: ((Event) -> Dynamic)?
+    open var onload: ((Event) -> Dynamic)?
+    open var ontimeout: ((Event) -> Dynamic)?
+    open var onloadend: ((Event) -> Dynamic)?
 }
 
 public external abstract class XMLHttpRequestUpload : XMLHttpRequestEventTarget
@@ -33,7 +33,7 @@ public external abstract class XMLHttpRequestUpload : XMLHttpRequestEventTarget
  * Exposes the JavaScript [XMLHttpRequest](https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest) to Kotlin
  */
 public external open class XMLHttpRequest : XMLHttpRequestEventTarget {
-    var onreadystatechange: ((Event) -> dynamic)?
+    var onreadystatechange: ((Event) -> Dynamic)?
     open val readyState: Short
     var timeout: Int
     var withCredentials: Boolean
@@ -48,7 +48,7 @@ public external open class XMLHttpRequest : XMLHttpRequestEventTarget {
     fun open(method: String, url: String)
     fun open(method: String, url: String, async: Boolean, username: String? = definedExternally, password: String? = definedExternally)
     fun setRequestHeader(name: String, value: String)
-    fun send(body: dynamic = definedExternally)
+    fun send(body: Dynamic? = definedExternally)
     fun abort()
     fun getResponseHeader(name: String): String?
     fun getAllResponseHeaders(): String
@@ -70,8 +70,8 @@ public external open class FormData(form: HTMLFormElement = definedExternally) {
     fun append(name: String, value: String)
     fun append(name: String, value: Blob, filename: String = definedExternally)
     fun delete(name: String)
-    fun get(name: String): dynamic
-    fun getAll(name: String): Array<dynamic>
+    fun get(name: String): Dynamic?
+    fun getAll(name: String): Array<Dynamic?>
     fun has(name: String): Boolean
     fun set(name: String, value: String)
     fun set(name: String, value: Blob, filename: String = definedExternally)
@@ -115,7 +115,7 @@ public inline fun ProgressEventInit(lengthComputable: Boolean? = false, loaded: 
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as ProgressEventInit
 }
 
 /* please, don't implement this interface! */
@@ -125,14 +125,14 @@ public external interface XMLHttpRequestResponseType {
     companion object
 }
 
-public inline val XMLHttpRequestResponseType.Companion.EMPTY: XMLHttpRequestResponseType get() = "".asDynamic().unsafeCast<XMLHttpRequestResponseType>()
+public inline val XMLHttpRequestResponseType.Companion.EMPTY: XMLHttpRequestResponseType get() = "".unsafeCast<XMLHttpRequestResponseType>()
 
-public inline val XMLHttpRequestResponseType.Companion.ARRAYBUFFER: XMLHttpRequestResponseType get() = "arraybuffer".asDynamic().unsafeCast<XMLHttpRequestResponseType>()
+public inline val XMLHttpRequestResponseType.Companion.ARRAYBUFFER: XMLHttpRequestResponseType get() = "arraybuffer".unsafeCast<XMLHttpRequestResponseType>()
 
-public inline val XMLHttpRequestResponseType.Companion.BLOB: XMLHttpRequestResponseType get() = "blob".asDynamic().unsafeCast<XMLHttpRequestResponseType>()
+public inline val XMLHttpRequestResponseType.Companion.BLOB: XMLHttpRequestResponseType get() = "blob".unsafeCast<XMLHttpRequestResponseType>()
 
-public inline val XMLHttpRequestResponseType.Companion.DOCUMENT: XMLHttpRequestResponseType get() = "document".asDynamic().unsafeCast<XMLHttpRequestResponseType>()
+public inline val XMLHttpRequestResponseType.Companion.DOCUMENT: XMLHttpRequestResponseType get() = "document".unsafeCast<XMLHttpRequestResponseType>()
 
-public inline val XMLHttpRequestResponseType.Companion.JSON: XMLHttpRequestResponseType get() = "json".asDynamic().unsafeCast<XMLHttpRequestResponseType>()
+public inline val XMLHttpRequestResponseType.Companion.JSON: XMLHttpRequestResponseType get() = "json".unsafeCast<XMLHttpRequestResponseType>()
 
-public inline val XMLHttpRequestResponseType.Companion.TEXT: XMLHttpRequestResponseType get() = "text".asDynamic().unsafeCast<XMLHttpRequestResponseType>()
+public inline val XMLHttpRequestResponseType.Companion.TEXT: XMLHttpRequestResponseType get() = "text".unsafeCast<XMLHttpRequestResponseType>()

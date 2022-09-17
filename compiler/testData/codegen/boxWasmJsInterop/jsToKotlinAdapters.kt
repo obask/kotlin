@@ -1,159 +1,60 @@
-inline fun checkNPE(body: () -> Unit) {
-    var throwed = false
-    try {
-        body()
-    } catch (e: NullPointerException) {
-        throwed = true
-    }
-    check(throwed)
+// FILE: externals.js
+
+class A {
+
+}
+class B extends A {
+
 }
 
-@JsFun("() => 'abc'")
-external fun notNullString(): String
+// FILE: externals.kt
 
-@JsFun("() => null")
-external fun notNull2String(): String
+import kotlinx.browser.*
+import org.w3c.dom.*
+import kotlinx.dom.*
 
-@JsFun("() => 'abc'")
-external fun nullString(): String?
+//external class A
+//class B
+//
+//@JsFun("(x) => x")
+//external fun f(x: B): B
+//
+//
+//fun lolkek1(x: B): A {
+//    return x as A
+//}
+//
+//fun lolkek() {
+//    println(lolkek1(B()))
+//}
 
-@JsFun("() => null")
-external fun null2String(): String?
+external open class A
+external class B : A
 
-fun testString() {
-    check(notNullString() == "abc")
-    checkNPE { notNull2String() }
-    check(nullString() == "abc")
-    check(null2String() == null)
-}
-
-external interface ExternRef
-
-@JsFun("() => 'abc'")
-external fun notNullExternRef(): ExternRef
-
-@JsFun("() => null")
-external fun notNull2ExternRef(): ExternRef
-
-@JsFun("() => 'abc'")
-external fun nullExternRef(): ExternRef?
-
-@JsFun("() => null")
-external fun null2ExternRef(): ExternRef?
+@JsFun("() => new A()")
+external fun f(): A
 
 
-fun testExterRef() {
-    notNullExternRef()
-    checkNPE { notNull2ExternRef() }
-    nullExternRef()
-    check(null2ExternRef() == null)
-}
-
-class DataRef
-
-@JsFun("(x) => x")
-external fun notNullDataRef(x: DataRef): DataRef
-
-@JsFun("(x) => null")
-external fun notNull2DataRef(x: DataRef): DataRef
-
-@JsFun("(x) => x")
-external fun nullDataRef(x: DataRef): DataRef?
-
-@JsFun("(x) => null")
-external fun null2DataRef(x: DataRef): DataRef?
-
-fun testDataRef() {
-    val dataRef = DataRef()
-    check(notNullDataRef(dataRef) == dataRef)
-    checkNPE { notNull2DataRef(dataRef) }
-    check (nullDataRef(dataRef) == dataRef)
-    check (null2DataRef(dataRef) == null)
-}
-
-@JsFun("() => 123")
-external fun notNullInt(): Int
-
-@JsFun("() => null")
-external fun notNull2Int(): Int
-
-@JsFun("() => 123")
-external fun nullInt(): Int?
-
-@JsFun("() => null")
-external fun null2Int(): Int?
-
-fun testInt() {
-    check(notNullInt() == 123)
-    check(notNull2Int() == 0)
-    check(nullInt() == 123)
-    check(null2Int() == null)
-}
-
-@JsFun("() => true")
-external fun notNullBoolean(): Boolean
-
-@JsFun("() => null")
-external fun notNull2Boolean(): Boolean
-
-@JsFun("() => true")
-external fun nullBoolean(): Boolean?
-
-@JsFun("() => null")
-external fun null2Boolean(): Boolean?
-
-fun testBoolean() {
-    check(notNullBoolean() == true)
-    check(notNull2Boolean() == false)
-    check(nullBoolean() == true)
-    check(null2Boolean() == null)
-}
-
-@JsFun("() => 123")
-external fun notNullShort(): Short
-
-@JsFun("() => null")
-external fun notNull2Short(): Short
-
-@JsFun("() => 123")
-external fun nullShort(): Short?
-
-@JsFun("() => null")
-external fun null2Short(): Short?
-
-fun testShort() {
-    check(notNullShort() == 123.toShort())
-    check(notNull2Short() == 0.toShort())
-    check(nullShort() == 123.toShort())
-    check(null2Short() == null)
-}
-
-@JsFun("() => 123.5")
-external fun notNullFloat(): Float
-
-@JsFun("() => null")
-external fun notNull2Float(): Float
-
-@JsFun("() => 123.5")
-external fun nullFloat(): Float?
-
-@JsFun("() => null")
-external fun null2Float(): Float?
-
-fun testFloat() {
-    check(notNullFloat() == 123.5f)
-    check(notNull2Float() == 0.0f)
-    check(nullFloat() == 123.5f)
-    check(null2Float() == null)
-}
+//fun lolkek() {
+//    val x: Any = f()
+//    x as B
+//}
 
 fun box(): String {
-    testString()
-    testExterRef()
-    testDataRef()
-    testInt()
-    testBoolean()
-    testShort()
-    testFloat()
+
+//    lolkek()
+
+//    with(x as B) {
+//        println(this)
+//    }
+
+    document!!.body!!.appendElement("div") {
+        with(this as HTMLDivElement) {
+            innerText = "I HATE DUKAT!"
+        }
+    }
+//    lolkek()
+//
+
     return "OK"
 }

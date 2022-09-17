@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2022 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -21,8 +21,8 @@ import org.w3c.notifications.*
 public external abstract class ServiceWorker : EventTarget, AbstractWorker, UnionMessagePortOrServiceWorker, UnionClientOrMessagePortOrServiceWorker {
     open val scriptURL: String
     open val state: ServiceWorkerState
-    open var onstatechange: ((Event) -> dynamic)?
-    fun postMessage(message: Any?, transfer: Array<dynamic> = definedExternally)
+    open var onstatechange: ((Event) -> Dynamic)?
+    fun postMessage(message: Any?, transfer: Array<Dynamic?> = definedExternally)
 }
 
 /**
@@ -33,13 +33,13 @@ public external abstract class ServiceWorkerRegistration : EventTarget {
     open val waiting: ServiceWorker?
     open val active: ServiceWorker?
     open val scope: String
-    open var onupdatefound: ((Event) -> dynamic)?
-    open val APISpace: dynamic
+    open var onupdatefound: ((Event) -> Dynamic)?
+    open val APISpace: Dynamic?
     fun update(): Promise<Unit>
     fun unregister(): Promise<Boolean>
     fun showNotification(title: String, options: NotificationOptions = definedExternally): Promise<Unit>
     fun getNotifications(filter: GetNotificationOptions = definedExternally): Promise<Array<Notification>>
-    fun methodName(): Promise<dynamic>
+    fun methodName(): Promise<Dynamic?>
 }
 
 /**
@@ -48,8 +48,8 @@ public external abstract class ServiceWorkerRegistration : EventTarget {
 public external abstract class ServiceWorkerContainer : EventTarget {
     open val controller: ServiceWorker?
     open val ready: Promise<ServiceWorkerRegistration>
-    open var oncontrollerchange: ((Event) -> dynamic)?
-    open var onmessage: ((MessageEvent) -> dynamic)?
+    open var oncontrollerchange: ((Event) -> Dynamic)?
+    open var onmessage: ((MessageEvent) -> Dynamic)?
     fun register(scriptURL: String, options: RegistrationOptions = definedExternally): Promise<ServiceWorkerRegistration>
     fun getRegistration(clientURL: String = definedExternally): Promise<Any?>
     fun getRegistrations(): Promise<Array<ServiceWorkerRegistration>>
@@ -71,7 +71,7 @@ public inline fun RegistrationOptions(scope: String? = undefined, type: WorkerTy
     val o = js("({})")
     o["scope"] = scope
     o["type"] = type
-    return o
+    return o as RegistrationOptions
 }
 
 /**
@@ -122,7 +122,7 @@ public inline fun ServiceWorkerMessageEventInit(data: Any? = undefined, origin: 
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as ServiceWorkerMessageEventInit
 }
 
 /**
@@ -131,14 +131,14 @@ public inline fun ServiceWorkerMessageEventInit(data: Any? = undefined, origin: 
 public external abstract class ServiceWorkerGlobalScope : WorkerGlobalScope {
     open val clients: Clients
     open val registration: ServiceWorkerRegistration
-    open var oninstall: ((Event) -> dynamic)?
-    open var onactivate: ((Event) -> dynamic)?
-    open var onfetch: ((FetchEvent) -> dynamic)?
-    open var onforeignfetch: ((Event) -> dynamic)?
-    open var onmessage: ((MessageEvent) -> dynamic)?
-    open var onnotificationclick: ((NotificationEvent) -> dynamic)?
-    open var onnotificationclose: ((NotificationEvent) -> dynamic)?
-    open var onfunctionalevent: ((Event) -> dynamic)?
+    open var oninstall: ((Event) -> Dynamic)?
+    open var onactivate: ((Event) -> Dynamic)?
+    open var onfetch: ((FetchEvent) -> Dynamic)?
+    open var onforeignfetch: ((Event) -> Dynamic)?
+    open var onmessage: ((MessageEvent) -> Dynamic)?
+    open var onnotificationclick: ((NotificationEvent) -> Dynamic)?
+    open var onnotificationclose: ((NotificationEvent) -> Dynamic)?
+    open var onfunctionalevent: ((Event) -> Dynamic)?
     fun skipWaiting(): Promise<Unit>
 }
 
@@ -149,14 +149,14 @@ public external abstract class Client : UnionClientOrMessagePortOrServiceWorker 
     open val url: String
     open val frameType: FrameType
     open val id: String
-    fun postMessage(message: Any?, transfer: Array<dynamic> = definedExternally)
+    fun postMessage(message: Any?, transfer: Array<Dynamic?> = definedExternally)
 }
 
 /**
  * Exposes the JavaScript [WindowClient](https://developer.mozilla.org/en/docs/Web/API/WindowClient) to Kotlin
  */
 public external abstract class WindowClient : Client {
-    open val visibilityState: dynamic
+    open val visibilityState: Dynamic?
     open val focused: Boolean
     fun focus(): Promise<WindowClient>
     fun navigate(url: String): Promise<WindowClient>
@@ -187,7 +187,7 @@ public inline fun ClientQueryOptions(includeUncontrolled: Boolean? = false, type
     val o = js("({})")
     o["includeUncontrolled"] = includeUncontrolled
     o["type"] = type
-    return o
+    return o as ClientQueryOptions
 }
 
 /**
@@ -213,7 +213,7 @@ public inline fun ExtendableEventInit(bubbles: Boolean? = false, cancelable: Boo
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as ExtendableEventInit
 }
 
 /**
@@ -241,7 +241,7 @@ public inline fun ForeignFetchOptions(scopes: Array<String>?, origins: Array<Str
     val o = js("({})")
     o["scopes"] = scopes
     o["origins"] = origins
-    return o
+    return o as ForeignFetchOptions
 }
 
 /**
@@ -281,7 +281,7 @@ public inline fun FetchEventInit(request: Request?, clientId: String? = null, is
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as FetchEventInit
 }
 
 public external open class ForeignFetchEvent(type: String, eventInitDict: ForeignFetchEventInit) : ExtendableEvent {
@@ -313,7 +313,7 @@ public inline fun ForeignFetchEventInit(request: Request?, origin: String? = "nu
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as ForeignFetchEventInit
 }
 
 public external interface ForeignFetchResponse {
@@ -333,7 +333,7 @@ public inline fun ForeignFetchResponse(response: Response?, origin: String? = un
     o["response"] = response
     o["origin"] = origin
     o["headers"] = headers
-    return o
+    return o as ForeignFetchResponse
 }
 
 /**
@@ -384,20 +384,20 @@ public inline fun ExtendableMessageEventInit(data: Any? = undefined, origin: Str
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as ExtendableMessageEventInit
 }
 
 /**
  * Exposes the JavaScript [Cache](https://developer.mozilla.org/en/docs/Web/API/Cache) to Kotlin
  */
 public external abstract class Cache {
-    fun match(request: dynamic, options: CacheQueryOptions = definedExternally): Promise<Any?>
-    fun matchAll(request: dynamic = definedExternally, options: CacheQueryOptions = definedExternally): Promise<Array<Response>>
-    fun add(request: dynamic): Promise<Unit>
-    fun addAll(requests: Array<dynamic>): Promise<Unit>
-    fun put(request: dynamic, response: Response): Promise<Unit>
-    fun delete(request: dynamic, options: CacheQueryOptions = definedExternally): Promise<Boolean>
-    fun keys(request: dynamic = definedExternally, options: CacheQueryOptions = definedExternally): Promise<Array<Request>>
+    fun match(request: Dynamic?, options: CacheQueryOptions = definedExternally): Promise<Any?>
+    fun matchAll(request: Dynamic? = definedExternally, options: CacheQueryOptions = definedExternally): Promise<Array<Response>>
+    fun add(request: Dynamic?): Promise<Unit>
+    fun addAll(requests: Array<Dynamic?>): Promise<Unit>
+    fun put(request: Dynamic?, response: Response): Promise<Unit>
+    fun delete(request: Dynamic?, options: CacheQueryOptions = definedExternally): Promise<Boolean>
+    fun keys(request: Dynamic? = definedExternally, options: CacheQueryOptions = definedExternally): Promise<Array<Request>>
 }
 
 public external interface CacheQueryOptions {
@@ -423,7 +423,7 @@ public inline fun CacheQueryOptions(ignoreSearch: Boolean? = false, ignoreMethod
     o["ignoreMethod"] = ignoreMethod
     o["ignoreVary"] = ignoreVary
     o["cacheName"] = cacheName
-    return o
+    return o as CacheQueryOptions
 }
 
 public external interface CacheBatchOperation {
@@ -449,14 +449,14 @@ public inline fun CacheBatchOperation(type: String? = undefined, request: Reques
     o["request"] = request
     o["response"] = response
     o["options"] = options
-    return o
+    return o as CacheBatchOperation
 }
 
 /**
  * Exposes the JavaScript [CacheStorage](https://developer.mozilla.org/en/docs/Web/API/CacheStorage) to Kotlin
  */
 public external abstract class CacheStorage {
-    fun match(request: dynamic, options: CacheQueryOptions = definedExternally): Promise<Any?>
+    fun match(request: Dynamic?, options: CacheQueryOptions = definedExternally): Promise<Any?>
     fun has(cacheName: String): Promise<Boolean>
     fun open(cacheName: String): Promise<Cache>
     fun delete(cacheName: String): Promise<Boolean>
@@ -483,15 +483,15 @@ public external interface ServiceWorkerState {
     companion object
 }
 
-public inline val ServiceWorkerState.Companion.INSTALLING: ServiceWorkerState get() = "installing".asDynamic().unsafeCast<ServiceWorkerState>()
+public inline val ServiceWorkerState.Companion.INSTALLING: ServiceWorkerState get() = "installing".unsafeCast<ServiceWorkerState>()
 
-public inline val ServiceWorkerState.Companion.INSTALLED: ServiceWorkerState get() = "installed".asDynamic().unsafeCast<ServiceWorkerState>()
+public inline val ServiceWorkerState.Companion.INSTALLED: ServiceWorkerState get() = "installed".unsafeCast<ServiceWorkerState>()
 
-public inline val ServiceWorkerState.Companion.ACTIVATING: ServiceWorkerState get() = "activating".asDynamic().unsafeCast<ServiceWorkerState>()
+public inline val ServiceWorkerState.Companion.ACTIVATING: ServiceWorkerState get() = "activating".unsafeCast<ServiceWorkerState>()
 
-public inline val ServiceWorkerState.Companion.ACTIVATED: ServiceWorkerState get() = "activated".asDynamic().unsafeCast<ServiceWorkerState>()
+public inline val ServiceWorkerState.Companion.ACTIVATED: ServiceWorkerState get() = "activated".unsafeCast<ServiceWorkerState>()
 
-public inline val ServiceWorkerState.Companion.REDUNDANT: ServiceWorkerState get() = "redundant".asDynamic().unsafeCast<ServiceWorkerState>()
+public inline val ServiceWorkerState.Companion.REDUNDANT: ServiceWorkerState get() = "redundant".unsafeCast<ServiceWorkerState>()
 
 /* please, don't implement this interface! */
 @JsName("null")
@@ -500,13 +500,13 @@ public external interface FrameType {
     companion object
 }
 
-public inline val FrameType.Companion.AUXILIARY: FrameType get() = "auxiliary".asDynamic().unsafeCast<FrameType>()
+public inline val FrameType.Companion.AUXILIARY: FrameType get() = "auxiliary".unsafeCast<FrameType>()
 
-public inline val FrameType.Companion.TOP_LEVEL: FrameType get() = "top-level".asDynamic().unsafeCast<FrameType>()
+public inline val FrameType.Companion.TOP_LEVEL: FrameType get() = "top-level".unsafeCast<FrameType>()
 
-public inline val FrameType.Companion.NESTED: FrameType get() = "nested".asDynamic().unsafeCast<FrameType>()
+public inline val FrameType.Companion.NESTED: FrameType get() = "nested".unsafeCast<FrameType>()
 
-public inline val FrameType.Companion.NONE: FrameType get() = "none".asDynamic().unsafeCast<FrameType>()
+public inline val FrameType.Companion.NONE: FrameType get() = "none".unsafeCast<FrameType>()
 
 /* please, don't implement this interface! */
 @JsName("null")
@@ -515,10 +515,10 @@ public external interface ClientType {
     companion object
 }
 
-public inline val ClientType.Companion.WINDOW: ClientType get() = "window".asDynamic().unsafeCast<ClientType>()
+public inline val ClientType.Companion.WINDOW: ClientType get() = "window".unsafeCast<ClientType>()
 
-public inline val ClientType.Companion.WORKER: ClientType get() = "worker".asDynamic().unsafeCast<ClientType>()
+public inline val ClientType.Companion.WORKER: ClientType get() = "worker".unsafeCast<ClientType>()
 
-public inline val ClientType.Companion.SHAREDWORKER: ClientType get() = "sharedworker".asDynamic().unsafeCast<ClientType>()
+public inline val ClientType.Companion.SHAREDWORKER: ClientType get() = "sharedworker".unsafeCast<ClientType>()
 
-public inline val ClientType.Companion.ALL: ClientType get() = "all".asDynamic().unsafeCast<ClientType>()
+public inline val ClientType.Companion.ALL: ClientType get() = "all".unsafeCast<ClientType>()

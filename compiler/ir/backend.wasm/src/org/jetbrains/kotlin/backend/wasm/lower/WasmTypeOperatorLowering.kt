@@ -234,6 +234,12 @@ class WasmBaseTypeOperatorTransformer(val context: WasmBackendContext) : IrEleme
             }
         }
 
+        if (toType == symbols.voidType) {
+            return builder.irCall(symbols.consumeAnyIntoVoid).apply {
+                putValueArgument(0, value)
+            }
+        }
+
         return builder.irCall(symbols.refCast, type = toType).apply {
             putTypeArgument(0, toType)
             putValueArgument(0, value)
@@ -324,8 +330,9 @@ class WasmBaseTypeOperatorTransformer(val context: WasmBackendContext) : IrEleme
     }
 
     private fun generateIsExternalClass(argument: IrExpression, klass: IrClass): IrExpression {
-        val function = context.mapping.wasmJsInteropFunctionToWrapper[context.mapping.wasmExternalClassToInstanceCheck[klass]!!]!!
-        return builder.irCall(function).also {
+        val instanceCheckFunction = context.mapping.wasmExternalClassToInstanceCheck[klass]!!
+        val wrappedInstanceCheckIfAny = context.mapping.wasmJsInteropFunctionToWrapper[instanceCheckFunction] ?: instanceCheckFunction
+        return builder.irCall(wrappedInstanceCheckIfAny).also {
             it.putValueArgument(0, argument)
         }
     }

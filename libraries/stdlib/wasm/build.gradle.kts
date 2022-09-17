@@ -19,7 +19,7 @@ val unimplementedNativeBuiltIns =
 
 val builtInsSources by task<Sync> {
     val sources = listOf(
-        "core/builtins/src/kotlin/"
+        "core/builtins/src/kotlin/", "libraries/stdlib/js/src/org.w3c", "libraries/stdlib/js/src/kotlinx/browser", "libraries/stdlib/js/src/kotlinx/dom"
     ) + unimplementedNativeBuiltIns
 
     val excluded = listOf(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2022 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -51,7 +51,7 @@ public inline fun WebGLContextAttributes(alpha: Boolean? = true, depth: Boolean?
     o["preserveDrawingBuffer"] = preserveDrawingBuffer
     o["preferLowPowerToHighPerformance"] = preferLowPowerToHighPerformance
     o["failIfMajorPerformanceCaveat"] = failIfMajorPerformanceCaveat
-    return o
+    return o as WebGLContextAttributes
 }
 
 public external abstract class WebGLObject
@@ -117,7 +117,7 @@ public external interface WebGLRenderingContextBase {
     fun getContextAttributes(): WebGLContextAttributes?
     fun isContextLost(): Boolean
     fun getSupportedExtensions(): Array<String>?
-    fun getExtension(name: String): dynamic
+    fun getExtension(name: String): Dynamic?
     fun activeTexture(texture: Int)
     fun attachShader(program: WebGLProgram?, shader: WebGLShader?)
     fun bindAttribLocation(program: WebGLProgram?, index: Int, name: String)
@@ -255,13 +255,13 @@ public external interface WebGLRenderingContextBase {
     fun useProgram(program: WebGLProgram?)
     fun validateProgram(program: WebGLProgram?)
     fun vertexAttrib1f(index: Int, x: Float)
-    fun vertexAttrib1fv(index: Int, values: dynamic)
+    fun vertexAttrib1fv(index: Int, values: Dynamic?)
     fun vertexAttrib2f(index: Int, x: Float, y: Float)
-    fun vertexAttrib2fv(index: Int, values: dynamic)
+    fun vertexAttrib2fv(index: Int, values: Dynamic?)
     fun vertexAttrib3f(index: Int, x: Float, y: Float, z: Float)
-    fun vertexAttrib3fv(index: Int, values: dynamic)
+    fun vertexAttrib3fv(index: Int, values: Dynamic?)
     fun vertexAttrib4f(index: Int, x: Float, y: Float, z: Float, w: Float)
-    fun vertexAttrib4fv(index: Int, values: dynamic)
+    fun vertexAttrib4fv(index: Int, values: Dynamic?)
     fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, offset: Int)
     fun viewport(x: Int, y: Int, width: Int, height: Int)
 
@@ -899,7 +899,7 @@ public inline fun WebGLContextEventInit(statusMessage: String? = "", bubbles: Bo
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as WebGLContextEventInit
 }
 
 /**

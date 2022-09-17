@@ -130,14 +130,14 @@ abstract class BasicWasmBoxTest(
 
             val generateWat = debugMode >= DebugMode.DEBUG
 
-            val compilerResult = compileWasm(
-                allModules = allModules,
-                backendContext = backendContext,
-                emitNameSection = true,
-                allowIncompleteImplementations = false,
-                generateWat = generateWat,
-            )
-
+//            val compilerResult = compileWasm(
+//                allModules = allModules,
+//                backendContext = backendContext,
+//                emitNameSection = true,
+//                allowIncompleteImplementations = false,
+//                generateWat = generateWat,
+//            )
+//
             eliminateDeadDeclarations(allModules, backendContext)
 
             val compilerResultWithDCE = compileWasm(
@@ -197,7 +197,7 @@ abstract class BasicWasmBoxTest(
                     )
             }
 
-            compileAndRunD8Test("d8", compilerResult)
+            //compileAndRunD8Test("d8", compilerResult)
             compileAndRunD8Test("d8-dce", compilerResultWithDCE)
 
             if (debugMode >= DebugMode.SUPER_DEBUG) {
@@ -223,7 +223,7 @@ abstract class BasicWasmBoxTest(
                     println(" ------ $name HTML file://$path/index.html")
                 }
 
-                writeBrowserTest("browser", compilerResult)
+                //writeBrowserTest("browser", compilerResult)
                 writeBrowserTest("browser-dce", compilerResultWithDCE)
             }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2022 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -51,7 +51,7 @@ public inline fun MediaKeySystemConfiguration(label: String? = "", initDataTypes
     o["distinctiveIdentifier"] = distinctiveIdentifier
     o["persistentState"] = persistentState
     o["sessionTypes"] = sessionTypes
-    return o
+    return o as MediaKeySystemConfiguration
 }
 
 public external interface MediaKeySystemMediaCapability {
@@ -69,7 +69,7 @@ public inline fun MediaKeySystemMediaCapability(contentType: String? = "", robus
     val o = js("({})")
     o["contentType"] = contentType
     o["robustness"] = robustness
-    return o
+    return o as MediaKeySystemMediaCapability
 }
 
 /**
@@ -86,7 +86,7 @@ public external abstract class MediaKeySystemAccess {
  */
 public external abstract class MediaKeys {
     fun createSession(sessionType: MediaKeySessionType = definedExternally): MediaKeySession
-    fun setServerCertificate(serverCertificate: dynamic): Promise<Boolean>
+    fun setServerCertificate(serverCertificate: Dynamic?): Promise<Boolean>
 }
 
 /**
@@ -97,11 +97,11 @@ public external abstract class MediaKeySession : EventTarget {
     open val expiration: Double
     open val closed: Promise<Unit>
     open val keyStatuses: MediaKeyStatusMap
-    open var onkeystatuseschange: ((Event) -> dynamic)?
-    open var onmessage: ((MessageEvent) -> dynamic)?
-    fun generateRequest(initDataType: String, initData: dynamic): Promise<Unit>
+    open var onkeystatuseschange: ((Event) -> Dynamic)?
+    open var onmessage: ((MessageEvent) -> Dynamic)?
+    fun generateRequest(initDataType: String, initData: Dynamic?): Promise<Unit>
     fun load(sessionId: String): Promise<Boolean>
-    fun update(response: dynamic): Promise<Unit>
+    fun update(response: Dynamic?): Promise<Unit>
     fun close(): Promise<Unit>
     fun remove(): Promise<Unit>
 }
@@ -111,8 +111,8 @@ public external abstract class MediaKeySession : EventTarget {
  */
 public external abstract class MediaKeyStatusMap {
     open val size: Int
-    fun has(keyId: dynamic): Boolean
-    fun get(keyId: dynamic): Any?
+    fun has(keyId: Dynamic?): Boolean
+    fun get(keyId: Dynamic?): Any?
 }
 
 /**
@@ -144,7 +144,7 @@ public inline fun MediaKeyMessageEventInit(messageType: MediaKeyMessageType?, me
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as MediaKeyMessageEventInit
 }
 
 public external open class MediaEncryptedEvent(type: String, eventInitDict: MediaEncryptedEventInit = definedExternally) : Event {
@@ -177,7 +177,7 @@ public inline fun MediaEncryptedEventInit(initDataType: String? = "", initData: 
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as MediaEncryptedEventInit
 }
 
 /* please, don't implement this interface! */
@@ -187,11 +187,11 @@ public external interface MediaKeysRequirement {
     companion object
 }
 
-public inline val MediaKeysRequirement.Companion.REQUIRED: MediaKeysRequirement get() = "required".asDynamic().unsafeCast<MediaKeysRequirement>()
+public inline val MediaKeysRequirement.Companion.REQUIRED: MediaKeysRequirement get() = "required".unsafeCast<MediaKeysRequirement>()
 
-public inline val MediaKeysRequirement.Companion.OPTIONAL: MediaKeysRequirement get() = "optional".asDynamic().unsafeCast<MediaKeysRequirement>()
+public inline val MediaKeysRequirement.Companion.OPTIONAL: MediaKeysRequirement get() = "optional".unsafeCast<MediaKeysRequirement>()
 
-public inline val MediaKeysRequirement.Companion.NOT_ALLOWED: MediaKeysRequirement get() = "not-allowed".asDynamic().unsafeCast<MediaKeysRequirement>()
+public inline val MediaKeysRequirement.Companion.NOT_ALLOWED: MediaKeysRequirement get() = "not-allowed".unsafeCast<MediaKeysRequirement>()
 
 /* please, don't implement this interface! */
 @JsName("null")
@@ -200,9 +200,9 @@ public external interface MediaKeySessionType {
     companion object
 }
 
-public inline val MediaKeySessionType.Companion.TEMPORARY: MediaKeySessionType get() = "temporary".asDynamic().unsafeCast<MediaKeySessionType>()
+public inline val MediaKeySessionType.Companion.TEMPORARY: MediaKeySessionType get() = "temporary".unsafeCast<MediaKeySessionType>()
 
-public inline val MediaKeySessionType.Companion.PERSISTENT_LICENSE: MediaKeySessionType get() = "persistent-license".asDynamic().unsafeCast<MediaKeySessionType>()
+public inline val MediaKeySessionType.Companion.PERSISTENT_LICENSE: MediaKeySessionType get() = "persistent-license".unsafeCast<MediaKeySessionType>()
 
 /* please, don't implement this interface! */
 @JsName("null")
@@ -211,19 +211,19 @@ public external interface MediaKeyStatus {
     companion object
 }
 
-public inline val MediaKeyStatus.Companion.USABLE: MediaKeyStatus get() = "usable".asDynamic().unsafeCast<MediaKeyStatus>()
+public inline val MediaKeyStatus.Companion.USABLE: MediaKeyStatus get() = "usable".unsafeCast<MediaKeyStatus>()
 
-public inline val MediaKeyStatus.Companion.EXPIRED: MediaKeyStatus get() = "expired".asDynamic().unsafeCast<MediaKeyStatus>()
+public inline val MediaKeyStatus.Companion.EXPIRED: MediaKeyStatus get() = "expired".unsafeCast<MediaKeyStatus>()
 
-public inline val MediaKeyStatus.Companion.RELEASED: MediaKeyStatus get() = "released".asDynamic().unsafeCast<MediaKeyStatus>()
+public inline val MediaKeyStatus.Companion.RELEASED: MediaKeyStatus get() = "released".unsafeCast<MediaKeyStatus>()
 
-public inline val MediaKeyStatus.Companion.OUTPUT_RESTRICTED: MediaKeyStatus get() = "output-restricted".asDynamic().unsafeCast<MediaKeyStatus>()
+public inline val MediaKeyStatus.Companion.OUTPUT_RESTRICTED: MediaKeyStatus get() = "output-restricted".unsafeCast<MediaKeyStatus>()
 
-public inline val MediaKeyStatus.Companion.OUTPUT_DOWNSCALED: MediaKeyStatus get() = "output-downscaled".asDynamic().unsafeCast<MediaKeyStatus>()
+public inline val MediaKeyStatus.Companion.OUTPUT_DOWNSCALED: MediaKeyStatus get() = "output-downscaled".unsafeCast<MediaKeyStatus>()
 
-public inline val MediaKeyStatus.Companion.STATUS_PENDING: MediaKeyStatus get() = "status-pending".asDynamic().unsafeCast<MediaKeyStatus>()
+public inline val MediaKeyStatus.Companion.STATUS_PENDING: MediaKeyStatus get() = "status-pending".unsafeCast<MediaKeyStatus>()
 
-public inline val MediaKeyStatus.Companion.INTERNAL_ERROR: MediaKeyStatus get() = "internal-error".asDynamic().unsafeCast<MediaKeyStatus>()
+public inline val MediaKeyStatus.Companion.INTERNAL_ERROR: MediaKeyStatus get() = "internal-error".unsafeCast<MediaKeyStatus>()
 
 /* please, don't implement this interface! */
 @JsName("null")
@@ -232,10 +232,10 @@ public external interface MediaKeyMessageType {
     companion object
 }
 
-public inline val MediaKeyMessageType.Companion.LICENSE_REQUEST: MediaKeyMessageType get() = "license-request".asDynamic().unsafeCast<MediaKeyMessageType>()
+public inline val MediaKeyMessageType.Companion.LICENSE_REQUEST: MediaKeyMessageType get() = "license-request".unsafeCast<MediaKeyMessageType>()
 
-public inline val MediaKeyMessageType.Companion.LICENSE_RENEWAL: MediaKeyMessageType get() = "license-renewal".asDynamic().unsafeCast<MediaKeyMessageType>()
+public inline val MediaKeyMessageType.Companion.LICENSE_RENEWAL: MediaKeyMessageType get() = "license-renewal".unsafeCast<MediaKeyMessageType>()
 
-public inline val MediaKeyMessageType.Companion.LICENSE_RELEASE: MediaKeyMessageType get() = "license-release".asDynamic().unsafeCast<MediaKeyMessageType>()
+public inline val MediaKeyMessageType.Companion.LICENSE_RELEASE: MediaKeyMessageType get() = "license-release".unsafeCast<MediaKeyMessageType>()
 
-public inline val MediaKeyMessageType.Companion.INDIVIDUALIZATION_REQUEST: MediaKeyMessageType get() = "individualization-request".asDynamic().unsafeCast<MediaKeyMessageType>()
+public inline val MediaKeyMessageType.Companion.INDIVIDUALIZATION_REQUEST: MediaKeyMessageType get() = "individualization-request".unsafeCast<MediaKeyMessageType>()

@@ -291,7 +291,8 @@ class BodyGenerator(
             if (valueArgument == null) {
                 generateDefaultInitializerForType(context.transformType(function.valueParameters[i].type), body)
             } else {
-                generateExpression(valueArgument)
+                generateWithExpectedType(valueArgument, function.valueParameters[i].type)
+                //generateExpression(valueArgument)
             }
         }
 

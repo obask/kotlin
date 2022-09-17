@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2022 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -27,7 +27,7 @@ public inline fun ClipboardEventInit(clipboardData: DataTransfer? = null, bubble
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as ClipboardEventInit
 }
 
 /**
@@ -65,5 +65,5 @@ public external interface ClipboardPermissionDescriptor {
 public inline fun ClipboardPermissionDescriptor(allowWithoutGesture: Boolean? = false): ClipboardPermissionDescriptor {
     val o = js("({})")
     o["allowWithoutGesture"] = allowWithoutGesture
-    return o
+    return o as ClipboardPermissionDescriptor
 }

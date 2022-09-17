@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2022 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -69,7 +69,7 @@ public inline fun SVGBoundingBoxOptions(fill: Boolean? = true, stroke: Boolean? 
     o["stroke"] = stroke
     o["markers"] = markers
     o["clipped"] = clipped
-    return o
+    return o as SVGBoundingBoxOptions
 }
 
 /**
@@ -192,21 +192,21 @@ public external abstract class SVGNameList {
     open val length: Int
     open val numberOfItems: Int
     fun clear()
-    fun initialize(newItem: dynamic): dynamic
-    fun insertItemBefore(newItem: dynamic, index: Int): dynamic
-    fun replaceItem(newItem: dynamic, index: Int): dynamic
-    fun removeItem(index: Int): dynamic
-    fun appendItem(newItem: dynamic): dynamic
-    fun getItem(index: Int): dynamic
+    fun initialize(newItem: Dynamic?): Dynamic?
+    fun insertItemBefore(newItem: Dynamic?, index: Int): Dynamic?
+    fun replaceItem(newItem: Dynamic?, index: Int): Dynamic?
+    fun removeItem(index: Int): Dynamic?
+    fun appendItem(newItem: Dynamic?): Dynamic?
+    fun getItem(index: Int): Dynamic?
 }
 
 @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 @kotlin.internal.InlineOnly
-public inline operator fun SVGNameList.get(index: Int): dynamic = asDynamic()[index]
+public inline operator fun SVGNameList.get(index: Int): Dynamic? = asDynamic()[index]
 
 @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 @kotlin.internal.InlineOnly
-public inline operator fun SVGNameList.set(index: Int, newItem: dynamic) { asDynamic()[index] = newItem }
+public inline operator fun SVGNameList.set(index: Int, newItem: Dynamic?) { asDynamic()[index] = newItem }
 
 /**
  * Exposes the JavaScript [SVGNumberList](https://developer.mozilla.org/en/docs/Web/API/SVGNumberList) to Kotlin
@@ -699,8 +699,8 @@ public external interface SVGElementInstance {
         get() = definedExternally
 }
 
-public external open class ShadowAnimation(source: dynamic, newTarget: dynamic) {
-    open val sourceAnimation: dynamic
+public external open class ShadowAnimation(source: Dynamic?, newTarget: Dynamic?) {
+    open val sourceAnimation: Dynamic?
 }
 
 /**

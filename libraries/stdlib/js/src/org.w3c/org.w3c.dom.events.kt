@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2022 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -45,7 +45,7 @@ public inline fun UIEventInit(view: Window? = null, detail: Int? = 0, bubbles: B
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as UIEventInit
 }
 
 /**
@@ -78,7 +78,7 @@ public inline fun FocusEventInit(relatedTarget: EventTarget? = null, view: Windo
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as FocusEventInit
 }
 
 /**
@@ -171,7 +171,7 @@ public inline fun MouseEventInit(screenX: Int? = 0, screenY: Int? = 0, clientX: 
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as MouseEventInit
 }
 
 public external interface EventModifierInit : UIEventInit {
@@ -242,7 +242,7 @@ public inline fun EventModifierInit(ctrlKey: Boolean? = false, shiftKey: Boolean
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as EventModifierInit
 }
 
 /**
@@ -315,7 +315,7 @@ public inline fun WheelEventInit(deltaX: Double? = 0.0, deltaY: Double? = 0.0, d
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as WheelEventInit
 }
 
 /**
@@ -353,7 +353,7 @@ public inline fun InputEventInit(data: String? = "", isComposing: Boolean? = fal
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as InputEventInit
 }
 
 /**
@@ -432,7 +432,7 @@ public inline fun KeyboardEventInit(key: String? = "", code: String? = "", locat
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as KeyboardEventInit
 }
 
 /**
@@ -465,7 +465,7 @@ public inline fun CompositionEventInit(data: String? = "", view: Window? = null,
     o["bubbles"] = bubbles
     o["cancelable"] = cancelable
     o["composed"] = composed
-    return o
+    return o as CompositionEventInit
 }
 
 /**
@@ -500,10 +500,10 @@ public external open class Event(type: String, eventInitDict: EventInit = define
  * Exposes the JavaScript [EventTarget](https://developer.mozilla.org/en/docs/Web/API/EventTarget) to Kotlin
  */
 public external abstract class EventTarget {
-    fun addEventListener(type: String, callback: EventListener?, options: dynamic = definedExternally)
-    fun addEventListener(type: String, callback: ((Event) -> Unit)?, options: dynamic = definedExternally)
-    fun removeEventListener(type: String, callback: EventListener?, options: dynamic = definedExternally)
-    fun removeEventListener(type: String, callback: ((Event) -> Unit)?, options: dynamic = definedExternally)
+    fun addEventListener(type: String, callback: EventListener?, options: Dynamic? = definedExternally)
+    fun addEventListener(type: String, callback: ((Event) -> Unit)?, options: Dynamic? = definedExternally)
+    fun removeEventListener(type: String, callback: EventListener?, options: Dynamic? = definedExternally)
+    fun removeEventListener(type: String, callback: ((Event) -> Unit)?, options: Dynamic? = definedExternally)
     fun dispatchEvent(event: Event): Boolean
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2021 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2022 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -21,9 +21,9 @@ public external open class MediaSource : EventTarget, MediaProvider {
     open val activeSourceBuffers: SourceBufferList
     open val readyState: ReadyState
     var duration: Double
-    var onsourceopen: ((Event) -> dynamic)?
-    var onsourceended: ((Event) -> dynamic)?
-    var onsourceclose: ((Event) -> dynamic)?
+    var onsourceopen: ((Event) -> Dynamic)?
+    var onsourceended: ((Event) -> Dynamic)?
+    var onsourceclose: ((Event) -> Dynamic)?
     fun addSourceBuffer(type: String): SourceBuffer
     fun removeSourceBuffer(sourceBuffer: SourceBuffer)
     fun endOfStream(error: EndOfStreamError = definedExternally)
@@ -48,12 +48,12 @@ public external abstract class SourceBuffer : EventTarget {
     open val textTracks: TextTrackList
     open var appendWindowStart: Double
     open var appendWindowEnd: Double
-    open var onupdatestart: ((Event) -> dynamic)?
-    open var onupdate: ((Event) -> dynamic)?
-    open var onupdateend: ((Event) -> dynamic)?
-    open var onerror: ((Event) -> dynamic)?
-    open var onabort: ((Event) -> dynamic)?
-    fun appendBuffer(data: dynamic)
+    open var onupdatestart: ((Event) -> Dynamic)?
+    open var onupdate: ((Event) -> Dynamic)?
+    open var onupdateend: ((Event) -> Dynamic)?
+    open var onerror: ((Event) -> Dynamic)?
+    open var onabort: ((Event) -> Dynamic)?
+    fun appendBuffer(data: Dynamic?)
     fun abort()
     fun remove(start: Double, end: Double)
 }
@@ -63,8 +63,8 @@ public external abstract class SourceBuffer : EventTarget {
  */
 public external abstract class SourceBufferList : EventTarget {
     open val length: Int
-    open var onaddsourcebuffer: ((Event) -> dynamic)?
-    open var onremovesourcebuffer: ((Event) -> dynamic)?
+    open var onaddsourcebuffer: ((Event) -> Dynamic)?
+    open var onremovesourcebuffer: ((Event) -> Dynamic)?
 }
 
 @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
@@ -78,11 +78,11 @@ public external interface ReadyState {
     companion object
 }
 
-public inline val ReadyState.Companion.CLOSED: ReadyState get() = "closed".asDynamic().unsafeCast<ReadyState>()
+public inline val ReadyState.Companion.CLOSED: ReadyState get() = "closed".unsafeCast<ReadyState>()
 
-public inline val ReadyState.Companion.OPEN: ReadyState get() = "open".asDynamic().unsafeCast<ReadyState>()
+public inline val ReadyState.Companion.OPEN: ReadyState get() = "open".unsafeCast<ReadyState>()
 
-public inline val ReadyState.Companion.ENDED: ReadyState get() = "ended".asDynamic().unsafeCast<ReadyState>()
+public inline val ReadyState.Companion.ENDED: ReadyState get() = "ended".unsafeCast<ReadyState>()
 
 /* please, don't implement this interface! */
 @JsName("null")
@@ -91,9 +91,9 @@ public external interface EndOfStreamError {
     companion object
 }
 
-public inline val EndOfStreamError.Companion.NETWORK: EndOfStreamError get() = "network".asDynamic().unsafeCast<EndOfStreamError>()
+public inline val EndOfStreamError.Companion.NETWORK: EndOfStreamError get() = "network".unsafeCast<EndOfStreamError>()
 
-public inline val EndOfStreamError.Companion.DECODE: EndOfStreamError get() = "decode".asDynamic().unsafeCast<EndOfStreamError>()
+public inline val EndOfStreamError.Companion.DECODE: EndOfStreamError get() = "decode".unsafeCast<EndOfStreamError>()
 
 /* please, don't implement this interface! */
 @JsName("null")
@@ -102,6 +102,6 @@ public external interface AppendMode {
     companion object
 }
 
-public inline val AppendMode.Companion.SEGMENTS: AppendMode get() = "segments".asDynamic().unsafeCast<AppendMode>()
+public inline val AppendMode.Companion.SEGMENTS: AppendMode get() = "segments".unsafeCast<AppendMode>()
 
-public inline val AppendMode.Companion.SEQUENCE: AppendMode get() = "sequence".asDynamic().unsafeCast<AppendMode>()
+public inline val AppendMode.Companion.SEQUENCE: AppendMode get() = "sequence".unsafeCast<AppendMode>()
