@@ -93,8 +93,10 @@ class FirStatusResolver(
 
         return buildList {
             scope.processPropertiesByName(property.name) {}
-            scope.processDirectOverriddenPropertiesWithBaseScope(property.symbol) { symbol, _ ->
-                this += symbol.fir
+            scope.processDirectOverriddenPropertiesWithBaseScope(property.symbol) { overriddenSymbol, _ ->
+                if (overriddenSymbol.fir.isVisibleFromDerivedClass(containingClass.moduleData)) {
+                    this += overriddenSymbol.fir
+                }
                 ProcessorAction.NEXT
             }
         }
@@ -129,7 +131,9 @@ class FirStatusResolver(
             val symbol = function.symbol
             scope.processFunctionsByName(function.name) {}
             scope.processDirectOverriddenFunctionsWithBaseScope(symbol) { overriddenSymbol, _ ->
-                this += overriddenSymbol.fir
+                if (overriddenSymbol.fir.isVisibleFromDerivedClass(containingClass.moduleData)) {
+                    this += overriddenSymbol.fir
+                }
                 ProcessorAction.NEXT
             }
         }.mapNotNull {
