@@ -1345,6 +1345,12 @@ public class Fir2IrTextTestGenerated extends AbstractFir2IrTextTest {
         }
 
         @Test
+        @TestMetadata("dataClassWithJvmRecord.kt")
+        public void testDataClassWithJvmRecord() throws Exception {
+            runTest("compiler/testData/ir/irText/expressions/dataClassWithJvmRecord.kt");
+        }
+
+        @Test
         @TestMetadata("destructuring1.kt")
         public void testDestructuring1() throws Exception {
             runTest("compiler/testData/ir/irText/expressions/destructuring1.kt");
