@@ -41,7 +41,7 @@ internal open class BaseKotlin2JsCompileConfig<TASK : Kotlin2JsCompile>(
             task.outputFileProperty.value(
                 task.destinationDirectory.flatMap { dir ->
                     if (task.compilerOptions.outputFile.orNull != null) {
-                        task.compilerOptions.outputFile.map { File(it + compilation.platformType.fileExtension) }
+                        task.compilerOptions.outputFile.map { File(it) }
                     } else {
                         task.compilerOptions.moduleName.map { name ->
                             dir.file(name + compilation.platformType.fileExtension).asFile
