@@ -44157,6 +44157,12 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
             }
 
             @Test
+            @TestMetadata("syntheticJavaProperty.kt")
+            public void testSyntheticJavaProperty() throws Exception {
+                runTest("compiler/testData/codegen/box/reflection/properties/syntheticJavaProperty.kt");
+            }
+
+            @Test
             @TestMetadata("withLocalType.kt")
             public void testWithLocalType() throws Exception {
                 runTest("compiler/testData/codegen/box/reflection/properties/withLocalType.kt");
@@ -48621,6 +48627,12 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
         @TestMetadata("syntheticAccessorNames.kt")
         public void testSyntheticAccessorNames() throws Exception {
             runTest("compiler/testData/codegen/box/syntheticAccessors/syntheticAccessorNames.kt");
+        }
+
+        @Test
+        @TestMetadata("syntheticJavaProperty.kt")
+        public void testSyntheticJavaProperty() throws Exception {
+            runTest("compiler/testData/codegen/box/syntheticAccessors/syntheticJavaProperty.kt");
         }
 
         @Nested

@@ -351,7 +351,8 @@ internal class PropertyReferenceLowering(val context: JvmBackendContext) : IrEle
         call.putValueArgument(index++, computeSignatureString(expression))
         if (useOptimizedSuperClass) {
             val isPackage = (container is IrClass && container.isFileClass) || container is IrPackageFragment
-            call.putValueArgument(index, irInt(if (isPackage) 1 else 0))
+            val isSynthetic = (expression.symbol.owner as? IrProperty)?.origin == IrDeclarationOrigin.SYNTHETIC_JAVA_PROPERTY_DELEGATE
+            call.putValueArgument(index, irInt((if (isPackage) 1 else 0) or (if (isSynthetic) 2 else 0)))
         }
     }
 

@@ -6,6 +6,7 @@
 
 package kotlin.reflect.jvm.internal;
 
+import kotlin.jvm.KotlinReflectionNotSupportedError;
 import kotlin.jvm.internal.*;
 import kotlin.reflect.*;
 import kotlin.reflect.full.KClassifiers;
@@ -74,32 +75,44 @@ public class ReflectionFactoryImpl extends ReflectionFactory {
 
     @Override
     public KProperty0 property0(PropertyReference0 p) {
+        checkProperty(p);
         return new KProperty0Impl(getOwner(p), p.getName(), p.getSignature(), p.getBoundReceiver());
     }
 
     @Override
     public KMutableProperty0 mutableProperty0(MutablePropertyReference0 p) {
+        checkProperty(p);
         return new KMutableProperty0Impl(getOwner(p), p.getName(), p.getSignature(), p.getBoundReceiver());
     }
 
     @Override
     public KProperty1 property1(PropertyReference1 p) {
+        checkProperty(p);
         return new KProperty1Impl(getOwner(p), p.getName(), p.getSignature(), p.getBoundReceiver());
     }
 
     @Override
     public KMutableProperty1 mutableProperty1(MutablePropertyReference1 p) {
+        checkProperty(p);
         return new KMutableProperty1Impl(getOwner(p), p.getName(), p.getSignature(), p.getBoundReceiver());
     }
 
     @Override
     public KProperty2 property2(PropertyReference2 p) {
+        checkProperty(p);
         return new KProperty2Impl(getOwner(p), p.getName(), p.getSignature());
     }
 
     @Override
     public KMutableProperty2 mutableProperty2(MutablePropertyReference2 p) {
+        checkProperty(p);
         return new KMutableProperty2Impl(getOwner(p), p.getName(), p.getSignature());
+    }
+
+    private static void checkProperty(PropertyReference p) {
+        if (p.isSyntheticJavaProperty()) {
+            throw new KotlinReflectionNotSupportedError("Kotlin reflection is not yet supported for synthetic Java properties");
+        }
     }
 
     private static KDeclarationContainerImpl getOwner(CallableReference reference) {

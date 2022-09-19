@@ -11,18 +11,26 @@ import kotlin.reflect.KProperty;
 
 @SuppressWarnings("rawtypes")
 public abstract class PropertyReference extends CallableReference implements KProperty {
+    private final boolean syntheticJavaProperty;
+
     public PropertyReference() {
         super();
+
+        syntheticJavaProperty = false;
     }
 
     @SinceKotlin(version = "1.1")
     public PropertyReference(Object receiver) {
         super(receiver);
+
+        syntheticJavaProperty = false;
     }
 
     @SinceKotlin(version = "1.4")
     public PropertyReference(Object receiver, Class owner, String name, String signature, int flags) {
         super(receiver, owner, name, signature, (flags & 1) == 1);
+
+        syntheticJavaProperty = (flags & 2) == 2;
     }
 
     @Override
@@ -41,6 +49,11 @@ public abstract class PropertyReference extends CallableReference implements KPr
     @SinceKotlin(version = "1.1")
     public boolean isConst() {
         return getReflected().isConst();
+    }
+
+    @SinceKotlin(version = "1.8")
+    public boolean isSyntheticJavaProperty() {
+        return syntheticJavaProperty;
     }
 
     @Override
