@@ -16,7 +16,7 @@ import kotlin.test.*
 class AndroidGradlePluginVersionTest {
 
     @Test
-    fun `test - AndriodGradlePluginVersion current - matches AGP version`() {
+    fun `test - AndroidGradlePluginVersion current - matches AGP version`() {
         assertEquals(com.android.Version.ANDROID_GRADLE_PLUGIN_VERSION, assertNotNull(AndroidGradlePluginVersion.current).toString())
     }
 
