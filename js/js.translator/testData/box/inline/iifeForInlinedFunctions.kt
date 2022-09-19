@@ -70,15 +70,35 @@ fun test8(a: Long = 5.seconds) = a.toString()
 
 inline val Number.seconds: Long get() = this.toLong()
 
+fun test10(a: Int): String {
+    return baz one@ {
+        baz two@ {
+            baz three@ {
+                when (a) {
+                    1 -> return@one "1"
+                    2 -> return@two "2"
+                    3 -> return@two js("undefined").unsafeCast<String>() // Break the type safety intentionally.
+                    4 -> return "4"
+                    else -> "Fail"
+                }
+            } + "-three"
+        } + "-two"
+    } + "-one"
+}
+
 fun box(): String {
-    assertEquals(test1(true) + test1(false), "OK")
-    assertEquals(test2(), "OK")
-    assertEquals(test3(), "OK")
-    assertEquals(A(1).test4(), "1")
-    assertEquals(A(2).B().test5(), "2")
-    assertEquals(A(3).B().test6(), "3")
-    assertEquals(A(4).test7(), "4")
-    assertEquals(test8(), "5")
-    assertEquals(A(6).test9(), "6")
+    assertEquals("OK", test1(true) + test1(false))
+    assertEquals("OK", test2())
+    assertEquals("OK", test3())
+    assertEquals("1", A(1).test4())
+    assertEquals("2", A(2).B().test5())
+    assertEquals("3", A(3).B().test6())
+    assertEquals("4", A(4).test7())
+    assertEquals("5", test8())
+    assertEquals("6", A(6).test9())
+    assertEquals("1-one", test10(1))
+    assertEquals("2-two-one", test10(2))
+    assertEquals("undefined-two-one", test10(3))
+    assertEquals("4", test10(4))
     return "OK"
 }

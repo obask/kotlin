@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.ir.types.impl.IrSimpleTypeImpl
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.invokeFun
 import org.jetbrains.kotlin.ir.util.patchDeclarationParents
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
@@ -75,6 +76,14 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext, val 
     private var variablesForReturnTargets = mutableMapOf<IrReturnTargetSymbol, IrVariable>()
 
     /**
+     * If the return target is a target of some non-local return, a boolean variable is added for this target in addition to the
+     * return value variable.
+     *
+     * Note: this only happens if [wrapInIIFE] is `true`.
+     */
+    private var variablesForNonLocalReturnFlags = mutableMapOf<IrReturnTargetSymbol, IrVariable>()
+
+    /**
      * For each returnable block wrapped in an immediately invoked function expression there is an entry in this map.
      * Returnable blocks generated from [kotlin.internal.InlineOnly]-annotated functions are not wrapped.
      */
@@ -82,11 +91,13 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext, val 
 
     private val returnTargetSymbolStack = mutableListOf<IrReturnTargetSymbol>()
 
-    private val returnableBlocksWithNonLocalReturns = mutableSetOf<IrReturnableBlockSymbol>()
+    /**
+     * For a returnable block, contains a list of return targets of return statements in this block (including nested returnable blocks)
+     * except this block itself and its nested blocks.
+     */
+    private val nonLocalReturns = mutableMapOf<IrReturnableBlockSymbol, MutableSet<IrReturnTargetSymbol>>()
 
     private val returnableBlocksWithCapturedThis = mutableMapOf<IrReturnableBlockSymbol, IrValueSymbol>()
-
-    private fun IrReturnTarget.hasNonLocalReturns() = returnableBlocksWithNonLocalReturns.contains(this.symbol)
 
     override fun visitBlock(expression: IrBlock): IrExpression {
         if (expression !is IrReturnableBlock) return super.visitBlock(expression)
@@ -98,6 +109,9 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext, val 
         expression.type = context.irBuiltIns.unitType
         return context.createIrBuilder(expression.symbol).irComposite(expression, expression.origin, variable.type) {
             +variable
+            variablesForNonLocalReturnFlags.remove(expression.symbol)?.let {
+                +it
+            }
             +maybeWrappedInIIFE
             +irGet(variable)
         }
@@ -165,44 +179,38 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext, val 
             dispatchReceiver = functionExpression
         }
 
-        if (!expression.hasNonLocalReturns()) return iife
+        val nonLocalReturnsFromExpression = nonLocalReturns[expression.symbol] ?: return iife
 
-        // If this block has non-local returns that cross the boundary of this block, and the block is wrapped in an IIFE,
-        // we need to generate an early return from the IIFE to propagate the non-local return up the call stack.
-        //
-        // Basically, this code:
-        //     inline fun foo(f: () -> Unit) = f()
-        //
-        //     fun box(): String {
-        //         foo {
-        //             return "foo" // <-- non-local return from box()
-        //         }
-        //        return "bar"
-        //     }
-        //
-        // is translated to this:
-        //     fun box(): String {
-        //         val retVal: String
-        //         if ((fun foo() {
-        //             if ((fun <anonymous>() {
-        //                 retVal = "foo"
-        //                 return true // <-- returning true indicates a non-local return
-        //             }).invoke())
-        //                 return true // <-- return is propagated
-        //         }).invoke())
-        //             return retVal
-        //         return "bar"
-        //     }
         if (closestReturnTargetSymbol == null) compilationException("Return target stack is empty!", expression)
         val actualReturnTargetSymbol = wrappedInIIFE[closestReturnTargetSymbol] ?: closestReturnTargetSymbol
-        return context.createIrBuilder(actualReturnTargetSymbol).buildStatement(UNDEFINED_OFFSET, UNDEFINED_OFFSET) {
-            val returnStatement = if (closestReturnTargetSymbol.owner.hasNonLocalReturns())
-                irReturnTrue()
-            else
+        return context.createIrBuilder(actualReturnTargetSymbol).irComposite {
+            +iife
+            +irIfThen(
+                nonLocalReturnCondition(nonLocalReturnsFromExpression, expression),
                 variablesForReturnTargets[actualReturnTargetSymbol]?.let {
                     irReturn(irGet(it))
                 } ?: irReturnUnit()
-            irIfThen(iife, returnStatement)
+            )
+        }
+    }
+
+    private fun IrBlockBuilder.nonLocalReturnCondition(
+        returnTargetSymbols: Iterable<IrReturnTargetSymbol>,
+        expression: IrReturnableBlock
+    ): IrExpression {
+        fun irGetFlagVariable(returnTargetSymbol: IrReturnTargetSymbol): IrExpression {
+            val flagVariable = variablesForNonLocalReturnFlags[returnTargetSymbol]
+                ?: compilationException("No flag variable found for return target ${returnTargetSymbol.owner.render()}", expression)
+            return irGet(flagVariable)
+        }
+
+        val iterator = returnTargetSymbols
+        val firstSymbol = returnTargetSymbols.firstOrNull() ?: compilationException("Expected at least one non-local return", expression)
+        return returnTargetSymbols.asSequence().drop(1).fold(irGetFlagVariable(firstSymbol)) { result, returnTargetSymbol ->
+            irCall(this@JsReturnableBlockTransformer.context.intrinsics.jsOr).apply {
+                putValueArgument(0, result)
+                putValueArgument(1, irGetFlagVariable(returnTargetSymbol))
+            }
         }
     }
 
@@ -212,7 +220,11 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext, val 
         val transformed = super.visitFunctionNew(declaration)
         returnTargetSymbolStack.pop()
 
-        variablesForReturnTargets[declaration.symbol]?.let {
+        variablesForReturnTargets.remove(declaration.symbol)?.let {
+            declaration.body?.prependStatement(it)
+        }
+
+        variablesForNonLocalReturnFlags.remove(declaration.symbol)?.let {
             declaration.body?.prependStatement(it)
         }
 
@@ -232,15 +244,27 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext, val 
 
         val handleNonLocalReturnFromIIFE = wrapInIIFE && targetSymbol != returnTargetSymbolStack.peek()
 
-        if (handleNonLocalReturnFromIIFE && !currentBlockHasNonLocalReturns) {
+        val nonLocalReturnFlagVariable = if (handleNonLocalReturnFromIIFE)
+            variablesForNonLocalReturnFlags.getOrPut(targetSymbol) {
+                currentScope!!.scope.createTmpVariable(
+                    context.irBuiltIns.booleanType,
+                    nameHint = buildString {
+                        collectNamesForLambda(originalFunction)
+                        append("\$ret\$set")
+                    },
+                    isMutable = true
+                )
+            }
+        else null
+
+        if (handleNonLocalReturnFromIIFE) {
             for (returnTarget in returnTargetSymbolStack.asReversed()) {
                 if (returnTarget == targetSymbol) break
-                returnableBlocksWithNonLocalReturns.add(
-                    returnTarget.safeAs<IrReturnableBlockSymbol>() ?: compilationException(
-                        "returnTargetSymbolStack does not contain returnable blocks",
-                        expression
-                    )
+                val returnableBlockSymbol = returnTarget as? IrReturnableBlockSymbol ?: compilationException(
+                    "returnTargetSymbolStack does not contain returnable blocks",
+                    expression
                 )
+                nonLocalReturns.getOrPut(returnableBlockSymbol, ::mutableSetOf).add(targetSymbol)
             }
         }
 
@@ -262,10 +286,9 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext, val 
         return context.createIrBuilder(iifeSymbol ?: targetSymbol).irReturn(
             context.createIrBuilder(iifeSymbol ?: targetSymbol).irComposite {
                 +at(expression).irSet(variable.symbol, expression.value)
-                if (handleNonLocalReturnFromIIFE)
-                    +irTrue()
-                else
-                    +irUnit()
+                if (nonLocalReturnFlagVariable != null)
+                    +irSet(nonLocalReturnFlagVariable.symbol, irTrue())
+                +irUnit()
             }
         )
     }
@@ -295,7 +318,7 @@ private class JsReturnableBlockTransformer(val context: JsIrBackendContext, val 
         }
 
     private val currentBlockHasNonLocalReturns: Boolean
-        get() = returnTargetSymbolStack.peek()?.safeAs<IrReturnableBlockSymbol>()?.let(returnableBlocksWithNonLocalReturns::contains)
+        get() = returnTargetSymbolStack.peek()?.safeAs<IrReturnableBlockSymbol>()?.let(nonLocalReturns::containsKey)
             ?: false
 }
 
