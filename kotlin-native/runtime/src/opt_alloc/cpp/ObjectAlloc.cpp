@@ -14,6 +14,7 @@
 #include "../../mimalloc/c/include/mimalloc.h"
 #include "Alignment.hpp"
 #include "CompilerConstants.hpp"
+#include "Memory.h"
 
 #if KONAN_USE_DISPATCH
 #include <dispatch/dispatch.h>
@@ -33,7 +34,10 @@ std::atomic_flag scheduledCompactOnMainThread = ATOMIC_FLAG_INIT;
 
 void kotlin::initObjectPool() noexcept {
     if (!compiler::mimallocUseDefaultOptions()) {
-        std::call_once(initOptions, [] { mi_option_enable(mi_option_reset_decommits); });
+        std::call_once(initOptions, [] {
+            mi_option_enable(mi_option_reset_decommits);
+            mi_option_set(mi_option_reset_delay, 0);
+        });
     }
     mi_thread_init();
 }
@@ -59,8 +63,9 @@ void kotlin::compactObjectPoolInMainThread() noexcept {
         return;
     }
     dispatch_async_f(dispatch_get_main_queue(), nullptr, [](void*) {
-        kotlin::initObjectPool(); // Make sure mimalloc is initialized.
-        kotlin::compactObjectPoolInCurrentThread();
+        if (mm::IsCurrentThreadRegistered()) {
+            kotlin::compactObjectPoolInCurrentThread();
+        }
         scheduledCompactOnMainThread.clear();
     });
 #endif
