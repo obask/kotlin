@@ -174,7 +174,7 @@ class NativePlatformLibsIT : BaseGradleIT() {
 
     @Test
     fun testNoGenerationForUnsupportedHost() {
-        Assume.assumeFalse(HostManager.hostIsMac)
+        hostHaveUnsupportedTarget()
         deleteInstalledCompilers()
 
         platformLibrariesProject(KonanTarget.IOS_X64.presetName).buildWithLightDist("assemble") {
